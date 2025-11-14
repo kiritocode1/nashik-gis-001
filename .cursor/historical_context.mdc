@@ -1,0 +1,380 @@
+# Historical Context
+
+Keep appending new updates at the bottom. Do not remove older entries.
+
+---
+
+Date: 2025-10-28
+Author: AI Pair Programmer
+Change Summary:
+
+-   Added procession route click -> Drawer flow with detailed route info.
+-   Exposed `onRouteClick` in `GoogleMap.tsx` and wired to polyline and endpoint markers.
+-   Drawer shows festival, procession #, distance, start/end, police station, village, timing, description, and a static Gap Analysis placeholder.
+
+Files Updated:
+
+-   src/components/GoogleMap.tsx
+    -   Added `onRouteClick` prop to interface: around top props block
+    -   Emit route details from start/end markers and polylines: within polylines effect
+-   src/app/page.tsx
+    -   Import Drawer components: near top
+    -   Added `selectedRoute` state with extended fields: near state declarations
+    -   Passed `onRouteClick` to `GoogleMap`: around map JSX
+    -   Added right-side Drawer with route details and static analysis: below StreetView popup
+
+Notes:
+
+-   Kept strict typing (no `any`/`undefined`).
+-   Did not touch `legacy` or `node_modules`.
+
+---
+
+Date: 2025-10-28
+Author: AI Pair Programmer
+Change Summary:
+
+-   Styled route details drawer to match dark theme.
+-   Added green Start and red End cards within drawer.
+
+Files Updated:
+
+-   src/app/page.tsx
+    -   Drawer header background/border: around route drawer block
+    -   Start/End cards with emerald/red styles: within drawer content
+
+Notes:
+
+-   Visual alignment with existing dark UI; no logic changes.
+
+
+Date: 2025-10-10
+Author: AI Pair Programmer
+Change Summary:
+
+-   Implemented custom HTML OverlayView markers with glow+pulse and hover legend to match dark theme, inspired by The Globe of Economic Complexity.
+-   Replaced Google Maps Marker and InfoWindow usage for regular markers and KML-derived points with HTML overlays.
+-   Injected one-time CSS for markers; added helper `createHtmlMarker`.
+-   Cleaned unused imports/vars; preserved prop API (`onCCTVToggle`) for compatibility.
+
+Files Updated:
+
+-   src/components/GoogleMap.tsx
+    -   Import cleanup: L5
+    -   API comment/no-op param usage: L63-L66, L92-L94
+    -   CSS injection for markers: L114-L133
+    -   Helper `createHtmlMarker`: L135-L197
+    -   Marker overlays effect (replaces Google Markers): L325-L383
+    -   KML marker overlays (replace Marker+InfoWindow): L564-L584
+    -   Removed unused `infoWindowRef` (no longer present)
+
+Notes:
+
+-   Marker color defaults to `#22d3ee`; group color can be set via `markerGroups[].color`.
+-   Hover reveals a compact legend; click still calls `onPointClick`.
+-   No changes to `legacy` dir or `node_modules`.
+
+Refs:
+
+-   Aesthetic inspiration: http://globe.cid.harvard.edu/?mode=gridSphere&id=GE
+
+---
+
+Date: 2025-10-10
+Author: AI Pair Programmer
+Change Summary:
+
+-   Moved demo markers and heatmap to Nashik Gramin vicinity.
+-   Updated search descriptions to reference Nashik Gramin instead of San Francisco.
+
+Files Updated:
+
+-   src/app/page.tsx
+    -   Demo marker coordinates updated: L78-L176 (multiple inner edits)
+    -   Heatmap sample points updated to Nashik: L178-L238 (replaced data block)
+    -   Searchable points description updated: L257
+
+Notes:
+
+-   Map center already targets Nashik Gramin `center={{ lat: 20.0112771, lng: 74.00833808 }}`.
+-   No changes to legacy or node_modules.
+
+---
+
+Date: 2025-10-10
+Author: AI Pair Programmer
+Change Summary:
+
+-   Added `StreetViewPopup` with Framer Motion animations and Google Street View integration.
+-   Wired popup to marker clicks via `clickedPoint` in `src/app/page.tsx`; placed top-right with dark theme styling.
+
+Files Updated:
+
+-   src/components/StreetViewPopup.tsx (new)
+-   src/app/page.tsx
+    -   Imports `AnimatePresence` and `StreetViewPopup`: near top
+    -   Renders popup when `clickedPoint` set: within fixed top-right container below `GoogleMap`
+
+Notes:
+
+-   Requires `framer-motion` dependency. Install before running.
+-   Uses existing Google Maps script loaded by `GoogleMap.tsx`.
+
+---
+
+Date: 2025-10-10
+Author: AI Pair Programmer
+Change Summary:
+
+-   Street View: compute POV heading from pano to clicked lat/lng; increase search radius.
+-   Animate-on-click: key StreetViewPopup by lat,lng to retrigger Framer Motion.
+
+Files Updated:
+
+-   src/components/StreetViewPopup.tsx
+    -   Heading calculation + POV set; radius 120; within useEffect.
+-   src/app/page.tsx
+    -   Keyed <StreetViewPopup> using coordinates for animation resets.
+
+---
+
+Date: 2025-10-10
+Author: AI Pair Programmer
+Change Summary:
+
+-   Added API route to parse `emergency-data/dial112.csv` and serve JSON.
+-   Added client service to fetch Dial 112 data and a new toggle in the sidebar.
+-   Render Dial 112 as a marker group with theme color; lazy-load on toggle.
+
+Files Updated:
+
+-   src/app/api/dial112/route.ts (new): CSV parsing and GET endpoint.
+-   src/services/externalApi.ts: `fetchDial112Calls` + types.
+-   src/app/page.tsx:
+    -   New state/toggle/loaders for Dial 112.
+    -   Marker group `Dial 112 Calls` mapped to points.
+    -   Sidebar toggle with amber styling.
+
+Notes:
+
+-   Keeps current custom overlay marker style; integrates seamlessly with existing toggles.
+
+---
+
+Date: 2025-10-10
+Author: AI Pair Programmer
+Change Summary:
+
+-   Implemented SSE streaming for Dial 112 CSV to incrementally render points.
+-   Client subscribes via EventSource; batches updates to avoid jank.
+
+Files Updated:
+
+-   src/app/api/dial112/stream/route.ts (new): SSE reads CSV line-by-line, emits events.
+-   src/services/externalApi.ts: streamDial112Calls() typed and exported.
+-   src/app/page.tsx: Switch Dial 112 load to SSE with batching.
+
+Notes:
+
+-   Keeps existing marker style; big files no longer freeze the page.
+
+---
+
+Date: 2025-10-10
+Author: AI Pair Programmer
+Change Summary:
+
+-   Fixed UI freeze by proper buffering and `requestAnimationFrame` batching (50 rows/batch).
+-   Cleaned unused import `fetchDial112Calls`.
+
+Files Updated:
+
+-   src/app/page.tsx:
+    -   Dial 112 SSE effect now uses buffer + rAF; flushes on done.
+    -   Removed unused `fetchDial112Calls` import.
+
+Notes:
+
+-   Batches 50 rows per frame to yield browser control; prevents page lockup with large CSV.
+
+---
+
+Date: 2025-10-10
+Author: AI Pair Programmer
+Change Summary:
+
+-   Implemented viewport-based filtering for Dial 112 points to prevent rendering 26k+ markers at once.
+-   Added `onBoundsChanged` callback to GoogleMap; fires on `idle` event.
+-   Added separate Dial 112 heatmap toggle; merged both heatmaps (sample + Dial 112) into single layer.
+-   Cache all Dial 112 points; filter by map bounds and only render visible subset.
+
+Files Updated:
+
+-   src/components/GoogleMap.tsx:
+    -   Added `onBoundsChanged` prop: L65
+    -   Added bounds listener on map idle: L796-L820
+-   src/app/page.tsx:
+    -   New state: `dial112AllCalls` (cache), `dial112Calls` (visible), `mapBounds`, `dial112HeatmapVisible`
+    -   SSE loads into cache: L63-L104
+    -   Viewport filter effect: L106-L120
+    -   Dial 112 heatmap data: L292-L309
+    -   Merged heatmaps in GoogleMap prop: L609-L617
+    -   Two toggles: Dial 112 Points + Dial 112 Heatmap: L576-L619
+
+Notes:
+
+-   Points toggle: shows viewport-filtered markers with count.
+-   Heatmap toggle: density visualization using all cached points.
+-   Prevents UI freeze by rendering only visible markers (~100-500 typically).
+-   Sidebar shows visible/total counts for transparency.
+
+---
+
+Date: 2025-10-10
+Author: AI Pair Programmer
+Change Summary:
+
+-   Fixed SSE CORS/streaming error by properly encoding chunks to `Uint8Array`.
+-   Added `TextEncoder` and error handling in stream controller.
+
+Files Updated:
+
+-   src/app/api/dial112/stream/route.ts:
+    -   Use `TextEncoder` to encode SSE chunks: L12, L17, L46, L49
+    -   Added try-catch in stream controller: L15-L54
+    -   Added `X-Accel-Buffering: no` header for nginx compatibility: L63
+
+Notes:
+
+-   ReadableStream requires `Uint8Array` chunks, not strings.
+-   Fixes CORS/streaming errors in browser.
+
+---
+
+Date: 2025-10-10
+Author: AI Pair Programmer
+Change Summary:
+
+-   Removed all demo data (Parks, Bus Stations, Restaurants, Hotels markers).
+-   Removed demo heatmap data (sample population/activity density points).
+-   Removed demo-related state variables (`markersVisible`, `heatmapVisible`) and handler functions.
+-   Kept only real data sources: Dial 112 Calls and CCTV Cameras in marker groups.
+-   Moved Dial 112 toggles (Points + Heatmap) from bottom to main Map Layers section.
+-   Updated sidebar statistics to show Dial 112 and CCTV counts instead of sample points.
+
+Files Updated:
+
+-   src/app/page.tsx:
+    -   Removed state variables: L16-L20 (removed `markersVisible`, `heatmapVisible`)
+    -   Cleaned marker groups to only Dial 112 + CCTV: L183-L216 (removed Parks, Bus Stations, Restaurants, Hotels)
+    -   Removed demo heatmap data: L218 (removed entire `heatmapData` object)
+    -   Removed handler functions: L286-L293 (removed `handleMarkersToggle`, `handleHeatmapToggle`)
+    -   Updated sidebar layout: L351-L488
+        -   Removed "Points of Interest" toggle (was L507-L527)
+        -   Removed "Activity Heatmap" toggle (was L529-L549)
+        -   Moved Dial 112 Points toggle from bottom to main layers: L423-L444
+        -   Moved Dial 112 Heatmap toggle from bottom to main layers: L446-L466
+        -   Updated statistics section: L470-L484 (shows Dial 112 visible/total + CCTV count)
+    -   Updated GoogleMap heatmap prop: L499-L505 (uses only Dial 112 heatmap data, removed demo merge)
+    -   Removed unused props from GoogleMap: L511-L513 (removed `onMarkersToggle`, `onHeatmapToggle`)
+
+Notes:
+
+-   Layer panel now shows only production-ready features: KML, GeoJSON, CCTV, Dial 112 Points, Dial 112 Heatmap.
+-   Statistics display "Dial 112 Calls: X visible / Y total" and "CCTV Cameras: Z".
+-   Active layers count updated to reflect 5 total toggleable layers.
+-   No demo/sample data remains in the application.
+
+---
+
+Date: 2025-01-27
+Author: AI Pair Programmer
+Change Summary:
+
+-   Converted HTML table format in `accident_data.csv` to proper CSV format.
+-   Created Python script using BeautifulSoup4 to parse HTML table structure.
+-   Extracted 8 columns: Sr_No, State, District, Latitude, Longitude, Grid_ID, Accident_Count, All_India_Rank.
+-   Generated cleaned CSV with 501 data rows + header.
+
+Files Updated:
+
+-   emergency-data/accident_data_cleaned.csv (new): Clean CSV with proper headers and 501 accident records
+-   convert_html_to_csv.py (temporary, deleted): Python script for HTML to CSV conversion
+
+Notes:
+
+-   Original file contained HTML table markup instead of CSV format.
+-   Data includes accident locations in Nashik district with coordinates and rankings.
+-   All HTML tags and styling removed, data properly formatted as CSV.
+
+---
+
+Date: 2025-01-27
+Author: AI Pair Programmer
+Change Summary:
+
+-   Added accident data toggles (points + heatmap) following Dial112 pattern.
+-   Created SSE streaming API for accident_data.csv with proper CSV parsing.
+-   Added red-themed accident markers and heatmap visualization.
+-   Implemented viewport filtering and zoom-based decimation for performance.
+
+Files Updated:
+
+-   src/app/api/accidents/stream/route.ts (new): SSE endpoint parsing accident_data.csv
+-   src/services/externalApi.ts: Added AccidentRecord interface and streamAccidentData function
+-   src/app/page.tsx:
+    -   Added state: accidentVisible, accidentHeatmapVisible, accidentAllRecords, accidentRecords, accidentLoading
+    -   Added SSE effect for accident data (100 row batches, cache all)
+    -   Added viewport filter effect with same zoom decimation as Dial112
+    -   Added accident marker group (red #EF4444, label "🚗")
+    -   Added accident heatmap data (red gradient)
+    -   Added two toggles below Dial112: Accident Points + Accident Heatmap
+    -   Updated statistics to show accident counts and active layers (7 total)
+    -   Merged accident heatmap with dial112 heatmap in GoogleMap
+
+Notes:
+
+-   CSV has duplicate headers (lines 1 & 2) - skips line 2 automatically.
+-   Uses red color scheme (#EF4444) for accident data.
+-   Same decimation strategy as Dial112: zoom <10: 1/50, 10-11: 1/20, 12-13: 1/10, 14-15: 1/5, ≥16: all.
+-   Heatmap weight based on accident count from CSV.
+-   Positioned toggles below Dial112 toggles in sidebar.
+
+---
+
+Date: 2025-01-27
+Author: AI Pair Programmer
+Change Summary:
+
+-   Added ATM, Bank, and Hospital data layers with point markers and heatmap toggles.
+-   Fetched data from external API endpoints following CCTV implementation pattern.
+-   Added color-coded markers: ATM (light green #86EFAC), Bank (dark green #16A34A), Hospital (white #FFFFFF).
+-   Implemented 6 new sidebar toggles for points and heatmaps with loading spinners and counts.
+
+Files Updated:
+
+-   src/services/externalApi.ts:
+    -   Added BankLocation interface: L83-L98
+    -   Added BankResponse interface: L100-L103
+    -   Added fetchBankLocations function: L395-L440
+-   src/app/page.tsx:
+    -   Updated imports to include new types: L9
+    -   Added state variables for ATM, Bank, Hospital layers: L24-L40
+    -   Added data loading effects: L92-L153
+    -   Added marker groups for ATM, Bank, Hospital: L401-L467
+    -   Added heatmap data objects: L533-L594
+    -   Added 6 new sidebar toggles: L878-L1011
+    -   Updated layer statistics: L1021-L1025, L1043-L1054
+    -   Updated GoogleMap heatmap prop: L1070-L1086
+
+Notes:
+
+-   ATM uses light green (#86EFAC) with 🏧 emoji and "success" variant.
+-   Bank uses dark green (#16A34A) with 🏦 emoji and "success" variant.
+-   Hospital uses white (#FFFFFF) with 🏥 emoji and "default" variant.
+-   All layers follow CCTV pattern: load once when toggle enabled, show loading spinner.
+-   Heatmaps use appropriate color gradients matching marker colors.
+-   External API endpoints: get-atm-locations, get-bank-locations, get-hospitals.
+-   Active layers count updated from /7 to /13.
+
+---
