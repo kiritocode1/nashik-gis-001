@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Toggle, GooeyFilter } from "./LiquidToggle";
+import ChatInterface from "./ChatInterface";
 
 // Simple icon components to avoid external dependencies
 const MapIcon = ({ className }: { className?: string }) => (
@@ -125,6 +126,22 @@ const RouteIcon = ({ className }: { className?: string }) => (
 	</svg>
 );
 
+const ChatIcon = ({ className }: { className?: string }) => (
+	<svg
+		className={className}
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			strokeWidth={2}
+			d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+		/>
+	</svg>
+);
+
 export interface SidebarProps {
 	children: React.ReactNode;
 	processionRoutes?: React.ReactNode;
@@ -159,6 +176,12 @@ export default function Sidebar({ children, processionRoutes, settingsContent }:
 			icon: CategoriesIcon,
 			title: "Categories",
 			description: "Browse and toggle categories",
+		},
+		{
+			id: "chat",
+			icon: ChatIcon,
+			title: "AI Assistant",
+			description: "Chat with AI about crime data",
 		},
 	];
 
@@ -240,11 +263,15 @@ export default function Sidebar({ children, processionRoutes, settingsContent }:
 							</div>
 
 							{/* Content */}
-							<div className="flex-1 overflow-y-auto">
-								<div className="p-4">
-									{activeSection === "layers" && <div className="space-y-4">{children}</div>}
+							<div className="flex-1 overflow-hidden flex flex-col">
+								{activeSection === "layers" && (
+									<div className="flex-1 overflow-y-auto p-4">
+										<div className="space-y-4">{children}</div>
+									</div>
+								)}
 
-									{activeSection === "search" && (
+								{activeSection === "search" && (
+									<div className="flex-1 overflow-y-auto p-4">
 										<div className="space-y-4">
 											<div className="relative">
 												<SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -269,11 +296,17 @@ export default function Sidebar({ children, processionRoutes, settingsContent }:
 												</div>
 											</div>
 										</div>
-									)}
+									</div>
+								)}
 
-									{activeSection === "routes" && <div className="space-y-4">{processionRoutes}</div>}
+								{activeSection === "routes" && (
+									<div className="flex-1 overflow-y-auto p-4">
+										<div className="space-y-4">{processionRoutes}</div>
+									</div>
+								)}
 
-									{activeSection === "categories" && (
+								{activeSection === "categories" && (
+									<div className="flex-1 overflow-y-auto p-4">
 										<div className="space-y-4">
 											{settingsContent || (
 												<div className="space-y-3">
@@ -295,8 +328,14 @@ export default function Sidebar({ children, processionRoutes, settingsContent }:
 												</div>
 											)}
 										</div>
-									)}
-								</div>
+									</div>
+								)}
+
+								{activeSection === "chat" && (
+									<div className="flex-1 overflow-hidden">
+										<ChatInterface />
+									</div>
+								)}
 							</div>
 						</div>
 					)}

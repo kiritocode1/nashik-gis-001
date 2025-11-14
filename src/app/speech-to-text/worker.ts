@@ -13,6 +13,7 @@ interface WorkerMessage {
 	audio?: Float32Array;
 	sampleRate?: number;
 	conversationHistory?: ConversationMessage[];
+	text?: string;
 }
 
 interface WorkerResponse {
@@ -635,6 +636,282 @@ class VoxtralSingleton {
 		}
 	}
 
+	static async converseText(text: string, conversationHistory: ConversationMessage[]): Promise<{ response: string }> {
+		if (!this.chatPipeline) {
+			throw new Error("Model not initialized");
+		}
+
+		// Fetch comprehensive data
+		let comprehensiveData = "";
+		try {
+			const data = await this.fetchComprehensiveData();
+
+			// Fetch detailed crime data for geographic analysis
+			let geographicAnalysis = "";
+			let temporalAnalysis = "";
+			try {
+				const BASE_URL = "https://rhtechnology.in/nashik-gis/app.php";
+				const mapResponse = await fetch(`${BASE_URL}?endpoint=get-map-data&limit=2000`, {
+					method: "GET",
+					headers: { Accept: "application/json" },
+				});
+				if (mapResponse.ok) {
+					const mapData: MapDataResponse = await mapResponse.json();
+					if (mapData.success && mapData.data_points) {
+						// Geographic analysis
+						const wardCounts: Record<string, number> = {};
+						const addressPatterns: Record<string, number> = {};
+						const categoryByWard: Record<string, Record<string, number>> = {};
+
+						for (const point of mapData.data_points) {
+							const address = point.address || "";
+							const wardMatch = address.match(/ward\s*(\d+)|ward\s*([A-Za-z]+)/i);
+							const ward = wardMatch ? wardMatch[1] || wardMatch[2] : "Unknown";
+							wardCounts[ward] = (wardCounts[ward] || 0) + 1;
+
+							const addressWords = address.split(/\s+/).slice(0, 3).join(" ");
+							if (addressWords) {
+								addressPatterns[addressWords] = (addressPatterns[addressWords] || 0) + 1;
+							}
+
+							if (!categoryByWard[ward]) {
+								categoryByWard[ward] = {};
+							}
+							const catName = point.category_name || "Unknown";
+							categoryByWard[ward][catName] = (categoryByWard[ward][catName] || 0) + 1;
+						}
+
+						const topWards = Object.entries(wardCounts)
+							.sort(([, a], [, b]) => b - a)
+							.slice(0, 5);
+						const topAddresses = Object.entries(addressPatterns)
+							.sort(([, a], [, b]) => b - a)
+							.slice(0, 5);
+
+						geographicAnalysis = `\nGEOGRAPHIC ANALYSIS:\n`;
+						geographicAnalysis += `- Top 5 Wards by Crime Count:\n`;
+						topWards.forEach(([ward, count], idx) => {
+							const percent = Math.round((count / data.crimeData.total) * 100);
+							geographicAnalysis += `  ${idx + 1}. Ward ${ward}: ${count} incidents (${percent}% of total)\n`;
+							const topCatInWard = Object.entries(categoryByWard[ward] || {}).sort(([, a], [, b]) => b - a)[0];
+							if (topCatInWard) {
+								geographicAnalysis += `     Most common: ${topCatInWard[0]} (${topCatInWard[1]} incidents)\n`;
+							}
+						});
+						geographicAnalysis += `- Top Crime-Prone Areas:\n`;
+						topAddresses.forEach(([area, count], idx) => {
+							geographicAnalysis += `  ${idx + 1}. ${area}: ${count} incidents\n`;
+						});
+
+						// Temporal analysis
+						const hourCounts: Record<number, number> = {};
+						const dayOfWeekCounts: Record<number, number> = {};
+
+						for (const point of mapData.data_points) {
+							const date = new Date(point.created_at);
+							const hour = date.getHours();
+							const dayOfWeek = date.getDay();
+
+							hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+							dayOfWeekCounts[dayOfWeek] = (dayOfWeekCounts[dayOfWeek] || 0) + 1;
+						}
+
+						const topHours = Object.entries(hourCounts)
+							.sort(([, a], [, b]) => b - a)
+							.slice(0, 3)
+							.map(([h]) => parseInt(h));
+						const topDays = Object.entries(dayOfWeekCounts)
+							.sort(([, a], [, b]) => b - a)
+							.slice(0, 2)
+							.map(([d]) => parseInt(d));
+
+						const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+						temporalAnalysis = `\nTEMPORAL PATTERNS:\n`;
+						temporalAnalysis += `- Peak Crime Hours: ${topHours.map((h) => `${h}:00`).join(", ")}\n`;
+						temporalAnalysis += `- Most Active Days: ${topDays.map((d) => dayNames[d]).join(", ")}\n`;
+						temporalAnalysis += `- Recent Activity: ${data.crimeData.recent} crimes in last 7 days (${Math.round((data.crimeData.recent / data.crimeData.total) * 100)}% of total)\n`;
+					}
+				}
+			} catch (error) {
+				console.error("Error in detailed analysis:", error);
+			}
+
+			comprehensiveData = `\n\n=== COMPREHENSIVE NASHIK CRIME & EMERGENCY DATA REPORT ===\n\n`;
+
+			// Crime Data Summary with Analysis
+			comprehensiveData += `CRIME INCIDENTS ANALYSIS:\n`;
+			comprehensiveData += `- Total Incidents: ${data.crimeData.total}\n`;
+			comprehensiveData += `- Recent (Last 7 Days): ${data.crimeData.recent} (${Math.round((data.crimeData.recent / data.crimeData.total) * 100)}% of total)\n`;
+			if (data.crimeData.topCategories.length > 0) {
+				comprehensiveData += `- Top Crime Categories:\n`;
+				data.crimeData.topCategories.slice(0, 5).forEach((cat, idx) => {
+					const percent = Math.round((cat.count / data.crimeData.total) * 100);
+					comprehensiveData += `  ${idx + 1}. ${cat.name}: ${cat.count} incidents (${percent}%)\n`;
+				});
+			}
+			comprehensiveData += geographicAnalysis;
+			comprehensiveData += temporalAnalysis;
+
+			// Dial 112 Summary with Analysis
+			comprehensiveData += `\n\nDIAL 112 EMERGENCY CALLS ANALYSIS:\n`;
+			comprehensiveData += `- Total Calls: ${data.dial112.total}\n`;
+			if (Object.keys(data.dial112.byType).length > 0) {
+				const topCallTypes = Object.entries(data.dial112.byType)
+					.sort(([, a], [, b]) => b - a)
+					.slice(0, 5);
+				comprehensiveData += `- Emergency Call Type Distribution:\n`;
+				topCallTypes.forEach(([type, count], idx) => {
+					const percent = Math.round((count / data.dial112.total) * 100);
+					comprehensiveData += `  ${idx + 1}. ${type}: ${count} calls (${percent}%)\n`;
+				});
+			}
+			if (Object.keys(data.dial112.byPoliceStation).length > 0) {
+				const topStations = Object.entries(data.dial112.byPoliceStation)
+					.sort(([, a], [, b]) => b - a)
+					.slice(0, 5);
+				comprehensiveData += `- Stations with Highest Call Volume:\n`;
+				topStations.forEach(([station, count], idx) => {
+					const percent = Math.round((count / data.dial112.total) * 100);
+					comprehensiveData += `  ${idx + 1}. ${station}: ${count} calls (${percent}%)\n`;
+				});
+			}
+			comprehensiveData += `- Key Insights: ${data.dial112.summary}\n`;
+
+			// Dial 112 pattern analysis
+			if (data.dial112.total > 0) {
+				const dominantCallType = Object.entries(data.dial112.byType).sort(([, a], [, b]) => b - a)[0];
+				if (dominantCallType && dominantCallType[1] > data.dial112.total * 0.3) {
+					const percent = Math.round((dominantCallType[1] / data.dial112.total) * 100);
+					comprehensiveData += `- Pattern Alert: ${dominantCallType[0]} accounts for ${percent}% of all emergency calls. This suggests a need for specialized response protocols.\n`;
+				}
+			}
+
+			// CCTV Summary with Analysis
+			comprehensiveData += `\n\nCCTV SURVEILLANCE ANALYSIS:\n`;
+			comprehensiveData += `- Total Cameras: ${data.cctv.total}\n`;
+			comprehensiveData += `- Operational Status: ${data.cctv.working} working, ${data.cctv.total - data.cctv.working} non-functional\n`;
+			const workingPercent = data.cctv.total > 0 ? Math.round((data.cctv.working / data.cctv.total) * 100) : 0;
+			comprehensiveData += `- Operational Rate: ${workingPercent}%\n`;
+			if (Object.keys(data.cctv.byType).length > 0) {
+				const topTypes = Object.entries(data.cctv.byType)
+					.sort(([, a], [, b]) => b - a)
+					.slice(0, 3);
+				comprehensiveData += `- Camera Type Distribution:\n`;
+				topTypes.forEach(([type, count], idx) => {
+					const percent = Math.round((count / data.cctv.total) * 100);
+					comprehensiveData += `  ${idx + 1}. ${type}: ${count} cameras (${percent}%)\n`;
+				});
+			}
+			comprehensiveData += `- Summary: ${data.cctv.summary}\n`;
+			if (workingPercent < 80) {
+				comprehensiveData += `- Critical Alert: ${100 - workingPercent}% of cameras are non-functional. Immediate maintenance required for effective surveillance.\n`;
+			}
+
+			// Police Stations Summary with Analysis
+			comprehensiveData += `\n\nPOLICE STATIONS ANALYSIS:\n`;
+			comprehensiveData += `- ${data.policeStations.summary}\n`;
+			if (data.policeStations.total > 0) {
+				const inactiveCount = data.policeStations.total - data.policeStations.active;
+				if (inactiveCount > 0) {
+					comprehensiveData += `- Alert: ${inactiveCount} stations are inactive. Review operational status.\n`;
+				}
+				const coverageRatio = data.crimeData.total > 0 ? (data.crimeData.total / data.policeStations.active).toFixed(1) : "N/A";
+				comprehensiveData += `- Resource Analysis: ${coverageRatio} crimes per active station (indicates workload distribution)\n`;
+			}
+
+			// Hospitals Summary with Analysis
+			comprehensiveData += `\n\nHOSPITALS ANALYSIS:\n`;
+			comprehensiveData += `- ${data.hospitals.summary}\n`;
+			if (data.hospitals.total > 0) {
+				const inactiveCount = data.hospitals.total - data.hospitals.active;
+				if (inactiveCount > 0) {
+					comprehensiveData += `- Alert: ${inactiveCount} hospitals are inactive. May impact emergency medical response.\n`;
+				}
+				const hospitalToPopulationRatio = data.hospitals.active > 0 ? (data.dial112.total / data.hospitals.active).toFixed(1) : "N/A";
+				comprehensiveData += `- Emergency Response Capacity: ${hospitalToPopulationRatio} emergency calls per active hospital\n`;
+			}
+
+			// Procession Routes Summary with Analysis
+			comprehensiveData += `\n\nPROCESSION ROUTES ANALYSIS:\n`;
+			comprehensiveData += `- ${data.processionRoutes.summary}\n`;
+			if (data.processionRoutes.total > 0) {
+				comprehensiveData += `- Security Planning: ${data.processionRoutes.total} routes require police coordination and crowd management.\n`;
+				comprehensiveData += `- Recommendation: Coordinate with top stations from Dial 112 analysis for route security.\n`;
+			}
+
+			// Forecasting Alerts
+			comprehensiveData += `\n=== FORECASTING INSIGHTS ===\n`;
+			if (data.crimeData.recent > 0 && data.crimeData.total > 0) {
+				const recentPercent = Math.round((data.crimeData.recent / data.crimeData.total) * 100);
+				if (recentPercent > 30) {
+					comprehensiveData += `⚠️ High recent activity: ${recentPercent}% of crimes in last 7 days. Consider increased patrols.\n`;
+				}
+			}
+			if (data.crimeData.topCategories.length > 0) {
+				const dominant = data.crimeData.topCategories[0];
+				const percent = Math.round((dominant.count / data.crimeData.total) * 100);
+				if (percent > 30) {
+					comprehensiveData += `⚠️ Dominant crime type: ${dominant.name} (${percent}% of total). Focus prevention efforts here.\n`;
+				}
+			}
+			if (data.dial112.total > 0) {
+				const topCallType = Object.entries(data.dial112.byType).sort(([, a], [, b]) => b - a)[0];
+				if (topCallType) {
+					const percent = Math.round((topCallType[1] / data.dial112.total) * 100);
+					comprehensiveData += `⚠️ Most frequent emergency: ${topCallType[0]} (${percent}% of calls). Prepare response protocols.\n`;
+				}
+			}
+			if (data.cctv.total > 0) {
+				const workingPercent = Math.round((data.cctv.working / data.cctv.total) * 100);
+				if (workingPercent < 80) {
+					comprehensiveData += `⚠️ CCTV maintenance needed: Only ${workingPercent}% cameras operational.\n`;
+				}
+			}
+		} catch (error) {
+			console.error("Error fetching comprehensive data:", error);
+			comprehensiveData = "\n\nNote: Real-time data temporarily unavailable. Using general knowledge.\n";
+		}
+
+		const systemPrompt = `You are a data analyst for Nashik Government. You ONLY report statistics and patterns from the data provided below.
+
+STRICT RULES - FOLLOW EXACTLY:
+1. NEVER explain what Dial 112, CCTV, or other systems are or how they work. Users already know.
+2. NEVER use general knowledge, Wikipedia information, or facts not in the data below.
+3. ALWAYS start with specific numbers and statistics from the data.
+4. ONLY report: totals, counts, percentages, top categories, patterns, trends from the data.
+5. If data isn't available, say "Data not available" - do NOT make up anything.
+
+RESPONSE FORMAT:
+- Start immediately with key statistics
+- List top categories/types with counts
+- Mention percentages and patterns
+- Keep it concise - no explanations
+
+BAD EXAMPLE (DO NOT DO THIS):
+"Dial 112 is an emergency system used in North America. It allows rapid deployment..."
+
+GOOD EXAMPLE (DO THIS):
+"Dial 112 data shows: Total calls: 1,234. Top call type: Medical Emergency (456 calls, 37%). Top station: Station A (234 calls). Recent activity: 89 calls in last 24 hours."
+
+Below is the Nashik data. Use ONLY these numbers:${comprehensiveData}`;
+
+		const conversationText = conversationHistory.map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`).join("\n");
+
+		const prompt = conversationText ? `${systemPrompt}\n\n${conversationText}\nUser: ${text}\nAssistant:` : `${systemPrompt}\n\nUser: ${text}\nAssistant:`;
+
+		const chatResult = await this.chatPipeline(prompt, {
+			max_new_tokens: 512,
+			temperature: 0.3,
+		});
+
+		const chatOutput = chatResult as { generated_text?: string } | { generated_text?: string }[];
+		const generatedText = Array.isArray(chatOutput) ? chatOutput[0]?.generated_text || "" : chatOutput.generated_text || "";
+		const response = generatedText.split("Assistant:")[generatedText.split("Assistant:").length - 1]?.trim() || "";
+
+		return { response };
+	}
+
 	static async converse(audio: Float32Array, sampleRate: number, conversationHistory: ConversationMessage[]): Promise<{ transcription: string; response: string }> {
 		if (!this.sttPipeline || !this.chatPipeline) {
 			throw new Error("Model not initialized");
@@ -879,46 +1156,33 @@ class VoxtralSingleton {
 					comprehensiveData += `⚠️ CCTV maintenance needed: Only ${workingPercent}% cameras operational.\n`;
 				}
 			}
-
-			comprehensiveData += `\n\n=== ANALYTICAL CAPABILITIES ===\n`;
-			comprehensiveData += `You can answer questions like:\n`;
-			comprehensiveData += `- "Where are most crimes happening?" → Use geographic analysis (top wards and areas)\n`;
-			comprehensiveData += `- "What time do crimes occur most?" → Use temporal patterns (peak hours, days)\n`;
-			comprehensiveData += `- "What is the crime report?" → Provide comprehensive summary with all metrics\n`;
-			comprehensiveData += `- "Which areas need more police?" → Compare crime density with station distribution\n`;
-			comprehensiveData += `- "What emergency calls are most common?" → Use Dial 112 call type analysis\n`;
-			comprehensiveData += `- "Are CCTV cameras working?" → Use operational status and maintenance alerts\n`;
-			comprehensiveData += `- "What resources are needed?" → Analyze gaps between incidents and available resources\n`;
-			comprehensiveData += `\nAlways provide data-driven answers with specific numbers, percentages, and actionable recommendations.\n`;
 		} catch (error) {
 			console.error("Error fetching comprehensive data:", error);
 			comprehensiveData = "\n\nNote: Real-time data temporarily unavailable. Using general knowledge.\n";
 		}
 
-		const systemPrompt = `You are an AI assistant for Nashik Government's Crime Forecasting and Analysis System. Your role is to help government officials analyze crime patterns, forecast potential incidents, and provide insights based on available data.
+		const systemPrompt = `You are a data analyst for Nashik Government. You ONLY report statistics and patterns from the data provided below.
 
-Available Crime Data Types:
-- Map Data Points: Crime incidents with categories (theft, assault, etc.), subcategories, crime numbers, locations (latitude/longitude), addresses, timestamps, verification status
-- Dial 112 Calls: Emergency calls with event IDs, police stations, call types, locations, and timestamps
-- Accident Records: Road accidents with locations, grid IDs, accident counts, rankings, ambulance availability
-- Police Stations: Locations, contact numbers, types, wards, active status
-- CCTV Locations: Surveillance cameras with locations, types, working status, installation dates, wards
-- Procession Routes: Festival routes with start/end points, expected crowd, timing, police station assignments
+STRICT RULES - FOLLOW EXACTLY:
+1. NEVER explain what Dial 112, CCTV, or other systems are or how they work. Users already know.
+2. NEVER use general knowledge, Wikipedia information, or facts not in the data below.
+3. ALWAYS start with specific numbers and statistics from the data.
+4. ONLY report: totals, counts, percentages, top categories, patterns, trends from the data.
+5. If data isn't available, say "Data not available" - do NOT make up anything.
 
-Your capabilities:
-- Analyze crime patterns and trends using real-time data
-- Forecast potential crime hotspots based on historical data and current patterns
-- Provide insights on emergency call patterns
-- Suggest resource allocation (police, CCTV, ambulances) based on data analysis
-- Analyze accident-prone areas
-- Discuss procession route security planning
-- Make data-driven predictions and recommendations
+RESPONSE FORMAT:
+- Start immediately with key statistics
+- List top categories/types with counts
+- Mention percentages and patterns
+- Keep it concise - no explanations
 
-Always respond in a professional, helpful manner focused on public safety and crime prevention. 
+BAD EXAMPLE (DO NOT DO THIS):
+"Dial 112 is an emergency system used in North America. It allows rapid deployment..."
 
-When asked about specific data types (e.g., "dial 112", "CCTV", "police stations", "crime incidents", "hospitals", "procession routes"), provide a comprehensive summary analyzing what the data tells us, including patterns, trends, and actionable recommendations.
+GOOD EXAMPLE (DO THIS):
+"Dial 112 data shows: Total calls: 1,234. Top call type: Medical Emergency (456 calls, 37%). Top station: Station A (234 calls). Recent activity: 89 calls in last 24 hours."
 
-Use the provided comprehensive data to give specific, data-driven insights and forecasts.${comprehensiveData}`;
+Below is the Nashik data. Use ONLY these numbers:${comprehensiveData}`;
 
 		const conversationText = conversationHistory.map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`).join("\n");
 
@@ -926,7 +1190,7 @@ Use the provided comprehensive data to give specific, data-driven insights and f
 
 		const chatResult = await this.chatPipeline(prompt, {
 			max_new_tokens: 512,
-			temperature: 0.7,
+			temperature: 0.3,
 		});
 
 		const chatOutput = chatResult as { generated_text?: string } | { generated_text?: string }[];
@@ -961,17 +1225,26 @@ self.addEventListener("message", async (event: MessageEvent<WorkerMessage>) => {
 				throw error;
 			}
 		} else if (event.data.type === "converse") {
-			if (!event.data.audio || !event.data.sampleRate || event.data.conversationHistory === undefined) {
+			if (event.data.text && event.data.conversationHistory !== undefined) {
+				// Text-only conversation
+				const result = await VoxtralSingleton.converseText(event.data.text, event.data.conversationHistory || []);
+
+				self.postMessage({
+					status: "complete",
+					response: result.response,
+				} as WorkerResponse);
+			} else if (event.data.audio && event.data.sampleRate && event.data.conversationHistory !== undefined) {
+				// Audio conversation
+				const result = await VoxtralSingleton.converse(event.data.audio, event.data.sampleRate, event.data.conversationHistory || []);
+
+				self.postMessage({
+					status: "complete",
+					transcription: result.transcription,
+					response: result.response,
+				} as WorkerResponse);
+			} else {
 				throw new Error("Missing required data for conversation");
 			}
-
-			const result = await VoxtralSingleton.converse(event.data.audio, event.data.sampleRate, event.data.conversationHistory || []);
-
-			self.postMessage({
-				status: "complete",
-				transcription: result.transcription,
-				response: result.response,
-			} as WorkerResponse);
 		}
 	} catch (error) {
 		self.postMessage({
