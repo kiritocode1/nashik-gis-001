@@ -2,6 +2,43 @@
 
 ## Latest Changes (Current Session)
 
+### Removed CCTV and Police Stations Toggles from Layers Section
+
+**Date**: Current session  
+**Files Modified**:
+
+-   `src/app/page.tsx` (Lines 1468-1489, 1581-1624, 1704-1734) - Removed CCTV and Police Stations toggles from Layers section, updated active layers count
+
+**Changes Made**:
+
+1. **Removed from Layers Section**:
+    - Removed CCTV Cameras toggle
+    - Removed Police Stations toggle
+    - Removed Police Heatmap toggle
+    - Updated active layers count from 9 to 6
+    - Removed CCTV Cameras and Police Stations from Layer Statistics display
+
+2. **Final Layers Section Structure**:
+    - KML Boundaries
+    - GeoJSON Layer
+    - Dial 112 Points/Heatmap
+    - Accident Points/Heatmap
+    - [Divider]
+    - Categories (MIDC, आपत्कालीन सेवा, etc.)
+
+**Key Features**:
+
+-   Cleaner Layers section with only essential emergency data layers
+-   CCTV and Police Stations removed from layer toggles
+-   Updated statistics to reflect removed layers
+
+**Technical Details**:
+
+-   Removed CCTV toggle (lines 1468-1489)
+-   Removed Police Stations and Police Heatmap toggles (lines 1581-1624)
+-   Updated active layers calculation (removed cctvLayerVisible, policeLayerVisible, policeHeatmapVisible)
+-   Removed CCTV and Police statistics from display (lines 1704-1734)
+
 ### Reorganized Sidebar: Moved Categories to Layers Section and Removed ATM/Bank/Hospital from Categories
 
 **Date**: Current session  

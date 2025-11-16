@@ -1465,29 +1465,6 @@ export default function Home() {
 								/>
 							</div>
 
-							{/* CCTV Layer Toggle */}
-							<div className="flex items-center justify-between cursor-pointer group">
-								<div className="flex-1">
-									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🎥 CCTV Cameras</span>
-										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												cctvLayerVisible ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
-										>
-											{cctvLayerVisible ? "ON" : "OFF"}
-										</span>
-										{cctvLoading && <div className="w-3 h-3 border border-orange-400 border-t-transparent rounded-full animate-spin"></div>}
-									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Real-time surveillance cameras ({cctvLocations.length} locations)</p>
-								</div>
-								<Toggle
-									checked={cctvLayerVisible}
-									onCheckedChange={handleCCTVToggle}
-									variant="warning"
-								/>
-							</div>
-
 							{/* Dial 112 Points Toggle */}
 							<div className="flex items-center justify-between cursor-pointer group">
 								<div className="flex-1">
@@ -1575,51 +1552,6 @@ export default function Home() {
 									checked={accidentHeatmapVisible}
 									onCheckedChange={setAccidentHeatmapVisible}
 									variant="danger"
-								/>
-							</div>
-
-							{/* Police Station Points Toggle */}
-							<div className="flex items-center justify-between cursor-pointer group">
-								<div className="flex-1">
-									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🚔 Police Stations</span>
-										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												policeLayerVisible ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
-										>
-											{policeLayerVisible ? "ON" : "OFF"}
-										</span>
-										{policeLoading && <div className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin"></div>}
-									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Police stations ({policeLocations.length} locations)</p>
-								</div>
-								<Toggle
-									checked={policeLayerVisible}
-									onCheckedChange={setPoliceLayerVisible}
-									variant="default"
-								/>
-							</div>
-
-							{/* Police Station Heatmap Toggle */}
-							<div className="flex items-center justify-between cursor-pointer group">
-								<div className="flex-1">
-									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🔥 Police Heatmap</span>
-										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												policeHeatmapVisible ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
-										>
-											{policeHeatmapVisible ? "ON" : "OFF"}
-										</span>
-									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Density visualization ({policeLocations.length} total)</p>
-								</div>
-								<Toggle
-									checked={policeHeatmapVisible}
-									onCheckedChange={setPoliceHeatmapVisible}
-									variant="default"
 								/>
 							</div>
 
@@ -1779,16 +1711,13 @@ export default function Home() {
 											[
 												kmlLayerVisible,
 												geoJsonLayerVisible,
-												cctvLayerVisible,
 												dial112Visible,
 												dial112HeatmapVisible,
 												accidentVisible,
 												accidentHeatmapVisible,
-												policeLayerVisible,
-												policeHeatmapVisible,
 											].filter(Boolean).length
 										}
-										/9
+										/6
 									</span>
 								</div>
 								<div className="flex justify-between">
@@ -1802,14 +1731,6 @@ export default function Home() {
 									<span className="font-medium text-red-400">
 										{accidentRecords.length} visible / {accidentAllRecords.length} total
 									</span>
-								</div>
-								<div className="flex justify-between">
-									<span>CCTV Cameras:</span>
-									<span className="font-medium text-orange-400">{cctvLocations.length}</span>
-								</div>
-								<div className="flex justify-between">
-									<span>Police Stations:</span>
-									<span className="font-medium text-blue-400">{policeLocations.length}</span>
 								</div>
 							</div>
 						</div>
