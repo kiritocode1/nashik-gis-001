@@ -2,6 +2,100 @@
 
 ## Latest Changes (Current Session)
 
+### Reorganized Sidebar: Moved Categories to Layers Section and Removed ATM/Bank/Hospital from Categories
+
+**Date**: Current session  
+**Files Modified**:
+
+-   `src/app/page.tsx` (Lines 1127-1207, 1627-1771) - Removed ATM/Bank/Hospital toggles from Categories section, moved category items to Layers section
+
+**Changes Made**:
+
+1. **Removed from Categories Section**:
+    - Removed ATM Locations toggle and ATM Heatmap toggle
+    - Removed Bank Branches toggle and Bank Heatmap toggle
+    - Removed Hospitals toggle and Hospital Heatmap toggle
+    - Categories section now only contains the category data (MIDC, आपत्कालीन सेवा, etc.)
+
+2. **Added to Layers Section**:
+    - Added category items (MIDC, आपत्कालीन सेवा, आरोपींची माहिती, etc.) below Police Stations/Heatmap
+    - Added visual divider before categories in Layers section
+    - Categories appear with expandable subcategories, toggles, and point counts
+    - Same functionality as in Categories section (expandable, toggleable, with subcategories)
+
+3. **Final Structure**:
+    - **LAYERS section**: KML, GeoJSON, CCTV, Dial 112, Accidents, Police Stations + Categories (MIDC, etc.)
+    - **CATEGORIES section**: Only Categories (MIDC, आपत्कालीन सेवा, etc.) - no infrastructure layers
+
+**Key Features**:
+
+-   Categories now appear in both Layers and Categories sections
+-   Infrastructure layers (ATM, Bank, Hospital) completely removed from Categories
+-   Visual divider separates base layers from categories in Layers section
+-   All category functionality preserved (expandable, toggleable, subcategories)
+
+**Technical Details**:
+
+-   Removed 6 infrastructure toggles from Categories section (lines 1132-1265)
+-   Added categories to Layers section after Police Heatmap (lines 1627-1771)
+-   Added divider for visual separation in Layers section
+-   Categories section now only renders category data (lines 1127-1207)
+
+### Reorganized Sidebar: Moved ATM, Bank, and Hospital Layers to Categories Section
+
+**Date**: Current session  
+**Files Modified**:
+
+-   `src/app/page.tsx` (Lines 1420-1579, 1127-1412, 1627-1669) - Removed ATM, Bank, and Hospital layers from Map Layers section and moved them to Categories section with toggles
+
+**Changes Made**:
+
+1. **Removed from Map Layers Section**:
+    - Removed ATM Locations toggle and ATM Heatmap toggle
+    - Removed Bank Branches toggle and Bank Heatmap toggle
+    - Removed Hospitals toggle and Hospital Heatmap toggle
+    - Updated active layers count from 15 to 9 (removed 6 layers)
+    - Removed ATM, Bank, and Hospital statistics from Layer Statistics section
+
+2. **Added to Categories Section**:
+    - Added ATM Locations toggle with loading indicator
+    - Added ATM Heatmap toggle
+    - Added Bank Branches toggle with loading indicator
+    - Added Bank Heatmap toggle
+    - Added Hospitals toggle with loading indicator
+    - Added Hospital Heatmap toggle
+    - Added visual divider between infrastructure layers and category data
+    - All toggles maintain their original functionality and styling
+
+3. **Map Layers Section Now Contains**:
+    - KML Boundaries
+    - GeoJSON Layer
+    - CCTV Cameras
+    - Dial 112 Points
+    - Dial 112 Heatmap
+    - Accident Points
+    - Accident Heatmap
+    - Police Stations
+    - Police Heatmap
+
+**Key Features**:
+
+-   Cleaner Map Layers section focused on emergency and law enforcement data
+-   Infrastructure layers (ATM, Bank, Hospital) grouped in Categories section
+-   All toggles maintain original functionality
+-   Visual separation between infrastructure and category data
+-   Updated layer count statistics
+
+**Technical Details**:
+
+-   Removed 6 layer toggles from Map Layers section (lines 1581-1714)
+-   Added 6 layer toggles to Categories section (lines 1132-1265)
+-   Updated active layers calculation to exclude ATM, Bank, Hospital layers
+-   Removed ATM, Bank, Hospital from statistics display
+-   Added divider for visual separation in Categories section
+
+## Previous Changes
+
 ### Enhanced Summarization with Geographic, Temporal, and Analytical Insights
 
 **Date**: Current session  

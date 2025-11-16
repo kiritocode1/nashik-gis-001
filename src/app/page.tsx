@@ -1578,141 +1578,6 @@ export default function Home() {
 								/>
 							</div>
 
-							{/* ATM Points Toggle */}
-							<div className="flex items-center justify-between cursor-pointer group">
-								<div className="flex-1">
-									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🏧 ATM Locations</span>
-										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												atmLayerVisible ? "bg-green-300/20 text-green-300 border border-green-300/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
-										>
-											{atmLayerVisible ? "ON" : "OFF"}
-										</span>
-										{atmLoading && <div className="w-3 h-3 border border-green-300 border-t-transparent rounded-full animate-spin"></div>}
-									</div>
-									<p className="text-xs text-gray-400 mt-0.5">ATM locations ({atmLocations.length} locations)</p>
-								</div>
-								<Toggle
-									checked={atmLayerVisible}
-									onCheckedChange={setAtmLayerVisible}
-									variant="success"
-								/>
-							</div>
-
-							{/* ATM Heatmap Toggle */}
-							<div className="flex items-center justify-between cursor-pointer group">
-								<div className="flex-1">
-									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🔥 ATM Heatmap</span>
-										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												atmHeatmapVisible ? "bg-green-300/20 text-green-300 border border-green-300/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
-										>
-											{atmHeatmapVisible ? "ON" : "OFF"}
-										</span>
-									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Density visualization ({atmLocations.length} total)</p>
-								</div>
-								<Toggle
-									checked={atmHeatmapVisible}
-									onCheckedChange={setAtmHeatmapVisible}
-									variant="success"
-								/>
-							</div>
-
-							{/* Bank Points Toggle */}
-							<div className="flex items-center justify-between cursor-pointer group">
-								<div className="flex-1">
-									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🏦 Bank Branches</span>
-										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												bankLayerVisible ? "bg-green-600/20 text-green-400 border border-green-600/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
-										>
-											{bankLayerVisible ? "ON" : "OFF"}
-										</span>
-										{bankLoading && <div className="w-3 h-3 border border-green-400 border-t-transparent rounded-full animate-spin"></div>}
-									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Bank branches ({bankLocations.length} locations)</p>
-								</div>
-								<Toggle
-									checked={bankLayerVisible}
-									onCheckedChange={setBankLayerVisible}
-									variant="success"
-								/>
-							</div>
-
-							{/* Bank Heatmap Toggle */}
-							<div className="flex items-center justify-between cursor-pointer group">
-								<div className="flex-1">
-									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🔥 Bank Heatmap</span>
-										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												bankHeatmapVisible ? "bg-green-600/20 text-green-400 border border-green-600/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
-										>
-											{bankHeatmapVisible ? "ON" : "OFF"}
-										</span>
-									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Density visualization ({bankLocations.length} total)</p>
-								</div>
-								<Toggle
-									checked={bankHeatmapVisible}
-									onCheckedChange={setBankHeatmapVisible}
-									variant="success"
-								/>
-							</div>
-
-							{/* Hospital Points Toggle */}
-							<div className="flex items-center justify-between cursor-pointer group">
-								<div className="flex-1">
-									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🏥 Hospitals</span>
-										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												hospitalLayerVisible ? "bg-white/20 text-white border border-white/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
-										>
-											{hospitalLayerVisible ? "ON" : "OFF"}
-										</span>
-										{hospitalLoading && <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>}
-									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Medical facilities ({hospitalLocations.length} locations)</p>
-								</div>
-								<Toggle
-									checked={hospitalLayerVisible}
-									onCheckedChange={setHospitalLayerVisible}
-									variant="default"
-								/>
-							</div>
-
-							{/* Hospital Heatmap Toggle */}
-							<div className="flex items-center justify-between cursor-pointer group">
-								<div className="flex-1">
-									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🔥 Hospital Heatmap</span>
-										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												hospitalHeatmapVisible ? "bg-white/20 text-white border border-white/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
-										>
-											{hospitalHeatmapVisible ? "ON" : "OFF"}
-										</span>
-									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Density visualization ({hospitalLocations.length} total)</p>
-								</div>
-								<Toggle
-									checked={hospitalHeatmapVisible}
-									onCheckedChange={setHospitalHeatmapVisible}
-									variant="default"
-								/>
-							</div>
-
 							{/* Police Station Points Toggle */}
 							<div className="flex items-center justify-between cursor-pointer group">
 								<div className="flex-1">
@@ -1757,6 +1622,151 @@ export default function Home() {
 									variant="default"
 								/>
 							</div>
+
+							{/* Divider before categories */}
+							<div className="border-t border-gray-700/50 pt-3 mt-3"></div>
+
+							{/* Categories */}
+							{categories.length === 0 ? (
+								<div className="text-center py-4">
+									<div className="text-gray-400 mb-2">
+										<div className="w-8 h-8 mx-auto mb-2 border-2 border-gray-600 border-t-gray-200 rounded-full animate-spin"></div>
+										<p className="text-xs text-gray-400">Loading categories...</p>
+									</div>
+								</div>
+							) : (
+								<div className="space-y-2">
+									{categories.map((category) => {
+										const isExpanded = expandedCategories.has(category.id);
+										const isLoading = categoryLoading[category.id] || false;
+										const pointCount = categoryData[category.id]?.length || 0;
+
+										return (
+											<div
+												key={category.id}
+												className="space-y-1"
+											>
+												{/* Category Toggle */}
+												<div className="flex items-center justify-between cursor-pointer group">
+													<div
+														className="flex-1 flex items-center space-x-2"
+														onClick={() => {
+															const newExpanded = new Set(expandedCategories);
+															if (newExpanded.has(category.id)) {
+																newExpanded.delete(category.id);
+															} else {
+																newExpanded.add(category.id);
+															}
+															setExpandedCategories(newExpanded);
+														}}
+													>
+														{/* Chevron Icon */}
+														<svg
+															className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+															fill="none"
+															stroke="currentColor"
+															viewBox="0 0 24 24"
+														>
+															<path
+																strokeLinecap="round"
+																strokeLinejoin="round"
+																strokeWidth={2}
+																d="M9 5l7 7-7 7"
+															/>
+														</svg>
+														<div
+															className="w-3 h-3 rounded-full border border-white/20 flex-shrink-0"
+															style={{ backgroundColor: category.color }}
+														></div>
+														<span className="text-sm font-medium text-gray-200 truncate">{category.name}</span>
+														<span
+															className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+																categoryToggles[category.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+															}`}
+															style={
+																categoryToggles[category.id]
+																	? {
+																			background: `${category.color}20`,
+																			color: category.color,
+																			borderColor: `${category.color}30`,
+																	  }
+																	: undefined
+															}
+														>
+															{pointCount > 0 ? `${pointCount}` : ""}
+														</span>
+														{isLoading && <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>}
+													</div>
+													<Toggle
+														checked={categoryToggles[category.id] || false}
+														onCheckedChange={(checked) => {
+															setCategoryToggles((prev) => ({ ...prev, [category.id]: checked }));
+															if (checked) {
+																// Expand category when enabled
+																const newExpanded = new Set(expandedCategories);
+																newExpanded.add(category.id);
+																setExpandedCategories(newExpanded);
+															}
+														}}
+														variant="default"
+													/>
+												</div>
+
+												{/* Subcategories (expanded) */}
+												{isExpanded && category.subcategories.length > 0 && (
+													<div className="ml-7 space-y-1">
+														{category.subcategories.map((subcategory) => {
+															const subcatPoints = (categoryData[category.id] || []).filter((p) => p.subcategory_id === subcategory.id).length;
+
+															return (
+																<div
+																	key={subcategory.id}
+																	className="flex items-center justify-between cursor-pointer group"
+																>
+																	<div className="flex-1 min-w-0">
+																		<div className="flex items-center space-x-2">
+																			<span className="text-xs font-medium text-gray-300 truncate max-w-[120px]">{subcategory.name}</span>
+																			<span
+																				className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
+																					subcategoryToggles[category.id]?.[subcategory.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+																				}`}
+																				style={
+																					subcategoryToggles[category.id]?.[subcategory.id]
+																						? {
+																								background: `${category.color}20`,
+																								color: category.color,
+																								borderColor: `${category.color}30`,
+																						  }
+																						: undefined
+																				}
+																			>
+																				{subcatPoints > 0 ? `${subcatPoints}` : ""}
+																			</span>
+																		</div>
+																	</div>
+																	<Toggle
+																		checked={subcategoryToggles[category.id]?.[subcategory.id] || false}
+																		onCheckedChange={(checked) => {
+																			setSubcategoryToggles((prev) => ({
+																				...prev,
+																				[category.id]: {
+																					...prev[category.id],
+																					[subcategory.id]: checked,
+																				},
+																			}));
+																		}}
+																		variant="default"
+																	/>
+																</div>
+															);
+														})}
+													</div>
+												)}
+											</div>
+										);
+									})}
+								</div>
+							)}
 						</div>
 
 						{/* Layer Statistics */}
@@ -1774,17 +1784,11 @@ export default function Home() {
 												dial112HeatmapVisible,
 												accidentVisible,
 												accidentHeatmapVisible,
-												atmLayerVisible,
-												atmHeatmapVisible,
-												bankLayerVisible,
-												bankHeatmapVisible,
-												hospitalLayerVisible,
-												hospitalHeatmapVisible,
 												policeLayerVisible,
 												policeHeatmapVisible,
 											].filter(Boolean).length
 										}
-										/15
+										/9
 									</span>
 								</div>
 								<div className="flex justify-between">
@@ -1802,18 +1806,6 @@ export default function Home() {
 								<div className="flex justify-between">
 									<span>CCTV Cameras:</span>
 									<span className="font-medium text-orange-400">{cctvLocations.length}</span>
-								</div>
-								<div className="flex justify-between">
-									<span>ATM Locations:</span>
-									<span className="font-medium text-green-300">{atmLocations.length}</span>
-								</div>
-								<div className="flex justify-between">
-									<span>Bank Branches:</span>
-									<span className="font-medium text-green-400">{bankLocations.length}</span>
-								</div>
-								<div className="flex justify-between">
-									<span>Hospitals:</span>
-									<span className="font-medium text-white">{hospitalLocations.length}</span>
 								</div>
 								<div className="flex justify-between">
 									<span>Police Stations:</span>
