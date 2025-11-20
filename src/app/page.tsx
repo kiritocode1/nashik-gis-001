@@ -1,13 +1,14 @@
 "use client";
 
 import GoogleMap from "@/components/GoogleMap";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerClose } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
 import Sidebar from "@/components/Sidebar";
 import { Toggle, GooeyFilter } from "@/components/LiquidToggle";
 import { parseKMLFile, type KMLFeature, type KMLMarker } from "@/utils/kmlParser";
 import { AnimatePresence } from "framer-motion";
 import StreetViewPopup from "@/components/StreetViewPopup";
-import { useState, useEffect, useRef } from "react";
+import OfficerPopup from "@/components/OfficerPopup";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
 	fetchCCTVLocations,
 	type CCTVLocation,
@@ -32,12 +33,13 @@ import {
 	fetchPoliceStations,
 	type PoliceStation,
 } from "@/services/externalApi";
+import { getDutyOfficersLocations, type OfficerDutyLocation, type OfficersLocationsResponse } from "@/services/smartBandobastApis";
 
 export default function Home() {
 	// State for selected point and search
-	const [selectedPoint] = useState<{ lat: number; lng: number; zoom?: number } | undefined>();
+	const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lng: number; zoom?: number } | undefined>();
 	// const [searchQuery] = useState(""); // Currently unused
-	const [clickedPoint, setClickedPoint] = useState<{ lat: number; lng: number; title?: string; group?: string } | null>(null);
+	const [clickedPoint, setClickedPoint] = useState<{ lat: number; lng: number; title?: string; group?: string; meta?: Record<string, unknown> } | null>(null);
 	const [selectedRoute, setSelectedRoute] = useState<{
 		id: number;
 		festivalName: string;
@@ -62,6 +64,15 @@ export default function Home() {
 	const [dial112HeatmapVisible, setDial112HeatmapVisible] = useState(false); // Dial 112 heatmap toggle
 	const [accidentVisible, setAccidentVisible] = useState(false); // Accident points toggle
 	const [accidentHeatmapVisible, setAccidentHeatmapVisible] = useState(false); // Accident heatmap toggle
+	const [officerList, setOfficerList] = useState<OfficerDutyLocation[]>([]);
+	const [officerSummary, setOfficerSummary] = useState<OfficersLocationsResponse["data"] | null>(null);
+	const [officerLoading, setOfficerLoading] = useState(false);
+	const [officerError, setOfficerError] = useState<string | null>(null);
+	const [officerSearch, setOfficerSearch] = useState("");
+	const [officerAutoRefresh, setOfficerAutoRefresh] = useState(true);
+	const [officerLastUpdated, setOfficerLastUpdated] = useState<Date | null>(null);
+	const [officerPanelActive, setOfficerPanelActive] = useState(false);
+	const [selectedOfficer, setSelectedOfficer] = useState<OfficerDutyLocation | null>(null);
 
 	// ATM layer state
 	const [atmLayerVisible, setAtmLayerVisible] = useState(false);
@@ -191,6 +202,95 @@ export default function Home() {
 		}
 		return best;
 	};
+
+	const formatDateTime = (value?: string | Date | null) => {
+		if (!value) return "—";
+		const date = typeof value === "string" ? new Date(value) : value;
+		if (Number.isNaN(date.getTime())) return "—";
+		return date.toLocaleString();
+	};
+
+	const focusOfficer = useCallback((officer: OfficerDutyLocation, options?: { pan?: boolean; updateStreetView?: boolean }) => {
+		setSelectedOfficer(officer);
+		if (options?.updateStreetView !== false) {
+			setClickedPoint({
+				lat: officer.location.latitude,
+				lng: officer.location.longitude,
+				title: officer.name,
+				group: "Duty Officers",
+				meta: { officerId: officer.officerId },
+			});
+		}
+		if (options?.pan !== false) {
+			setSelectedPoint({ lat: officer.location.latitude, lng: officer.location.longitude, zoom: 17 });
+		}
+	}, []);
+
+	const fetchDutyOfficersRef = useRef<(() => Promise<void>) | null>(null);
+
+	const fetchDutyOfficers = useCallback(async () => {
+		setOfficerLoading(true);
+		setOfficerError(null);
+		try {
+			const response = await getDutyOfficersLocations();
+			const officersWithLocation = response.data.officers.filter((officer) => typeof officer?.location?.latitude === "number" && typeof officer?.location?.longitude === "number");
+			setOfficerSummary(response.data);
+			setOfficerList(officersWithLocation);
+			setOfficerLastUpdated(new Date());
+
+			if (selectedOfficer) {
+				const latest = officersWithLocation.find((officer) => officer.officerId === selectedOfficer.officerId);
+				if (latest) {
+					setSelectedOfficer(latest);
+					setClickedPoint({
+						lat: latest.location.latitude,
+						lng: latest.location.longitude,
+						title: latest.name,
+						group: "Duty Officers",
+					});
+				}
+			}
+		} catch (error) {
+			setOfficerError(error instanceof Error ? error.message : "Unable to fetch officer locations");
+		} finally {
+			setOfficerLoading(false);
+		}
+	}, [focusOfficer, selectedOfficer]);
+
+	// Store latest fetch function in ref
+	useEffect(() => {
+		fetchDutyOfficersRef.current = fetchDutyOfficers;
+	}, [fetchDutyOfficers]);
+
+	// Initial fetch
+	useEffect(() => {
+		fetchDutyOfficers();
+	}, []);
+
+	// Auto-refresh every 30s (only depends on toggle, uses ref for latest function)
+	useEffect(() => {
+		if (!officerAutoRefresh) return;
+		const id = window.setInterval(() => {
+			if (fetchDutyOfficersRef.current) {
+				fetchDutyOfficersRef.current();
+			}
+		}, 30000);
+		return () => window.clearInterval(id);
+	}, [officerAutoRefresh]);
+
+	const filteredOfficers = useMemo(() => {
+		const query = officerSearch.trim().toLowerCase();
+		if (!query) return officerList;
+		return officerList.filter((officer) => {
+			const haystack = `${officer.name} ${officer.sevrathId} ${officer.mobileNumber}`.toLowerCase();
+			return haystack.includes(query);
+		});
+	}, [officerList, officerSearch]);
+
+	const liveCount = officerSummary?.summary.withLiveLocation ?? officerList.filter((officer) => officer.location.source?.toLowerCase() === "live").length;
+	const reportedCount = officerSummary?.summary.withReportedLocation ?? officerList.filter((officer) => officer.location.source?.toLowerCase() === "reported").length;
+	const dutyCount = officerSummary?.summary.withDutyLocation ?? officerList.filter((officer) => officer.location.source?.toLowerCase().includes("duty")).length;
+	const totalOfficerCount = officerSummary?.totalOfficers ?? officerList.length;
 
 	// Load categories on mount
 	useEffect(() => {
@@ -599,6 +699,17 @@ export default function Home() {
 	// Marker groups - only real data sources
 	const markerGroups = [
 		{
+			name: "Duty Officers",
+			color: "#22C55E",
+			visible: officerPanelActive && officerList.length > 0,
+			markers: officerList.map((officer) => ({
+				position: { lat: officer.location.latitude, lng: officer.location.longitude },
+				title: officer.name,
+				label: "👮",
+				meta: { officerId: officer.officerId },
+			})),
+		},
+		{
 			name: "Dial 112 Calls",
 			color: "#EAB308", // Amber
 			visible: dial112Visible,
@@ -882,6 +993,195 @@ export default function Home() {
 
 	const processedProcessionRoutes = processProcessionRoutes();
 
+	const getOfficerStatusStyles = (officer: OfficerDutyLocation) => {
+		const source = officer.location.source?.toLowerCase();
+		if (source === "live") {
+			return { label: "LIVE", chip: "bg-green-500/20 text-green-300 border-green-500/40" };
+		}
+		if (source === "reported") {
+			return { label: "REPORTED", chip: "bg-cyan-500/20 text-cyan-300 border-cyan-500/40" };
+		}
+		return { label: "DUTY POINT", chip: "bg-pink-500/20 text-pink-200 border-pink-500/30" };
+	};
+
+	const officerLegendItems = [
+		{ label: "Live Attendance (Real-time)", description: "Device GPS signal", color: "bg-green-400" },
+		{ label: "Reported Location", description: "Manual check-in", color: "bg-cyan-400" },
+		{ label: "Assigned Duty Point", description: "Planned deployment", color: "bg-pink-400" },
+	];
+
+	const officerCards = [
+		{
+			title: "Total Officers",
+			value: totalOfficerCount,
+			grad: "from-indigo-500/40 via-indigo-500/10 to-transparent",
+			shadow: "shadow-indigo-500/30",
+		},
+		{
+			title: "Live Location",
+			value: liveCount,
+			grad: "from-emerald-500/40 via-emerald-500/10 to-transparent",
+			shadow: "shadow-emerald-500/30",
+		},
+		{
+			title: "Reported",
+			value: reportedCount,
+			grad: "from-cyan-500/40 via-cyan-500/10 to-transparent",
+			shadow: "shadow-cyan-500/30",
+		},
+		{
+			title: "Duty Point",
+			value: dutyCount,
+			grad: "from-pink-500/40 via-pink-500/10 to-transparent",
+			shadow: "shadow-pink-500/30",
+		},
+	];
+
+	const officerTrackingContent = (
+		<div className="flex h-full flex-col space-y-4">
+			<div className="grid grid-cols-2 gap-3">
+				{officerCards.map((card) => (
+					<div
+						key={card.title}
+						className={`rounded-2xl border border-white/5 bg-linear-to-br ${card.grad} p-4 text-white ${card.shadow}`}
+					>
+						<div className="text-xs uppercase tracking-wide text-white/70">{card.title}</div>
+						<div className="mt-2 text-3xl font-semibold">{card.value}</div>
+					</div>
+				))}
+			</div>
+
+			<div className="space-y-4 rounded-2xl border border-white/5 bg-white/5 p-4">
+				<div className="flex items-center justify-between">
+					<div>
+						<p className="text-sm font-semibold text-white">Marker Legend</p>
+						<p className="text-xs text-gray-400">Map + Street View context</p>
+					</div>
+				</div>
+				<div className="space-y-2">
+					{officerLegendItems.map((item) => (
+						<div
+							key={item.label}
+							className="flex items-center justify-between rounded-xl border border-white/5 bg-black/20 px-3 py-2 text-xs text-gray-300"
+						>
+							<div>
+								<div className="font-medium text-white">{item.label}</div>
+								<div className="text-[11px] text-gray-400">{item.description}</div>
+							</div>
+							<div className={`h-3 w-3 rounded-full ${item.color}`} />
+						</div>
+					))}
+				</div>
+				<div className="flex items-center justify-between text-sm text-gray-300">
+					<span>Auto-refresh (30s)</span>
+					<Toggle
+						checked={officerAutoRefresh}
+						onCheckedChange={setOfficerAutoRefresh}
+						variant="success"
+					/>
+				</div>
+				<div className="text-xs text-gray-500">Last updated: {officerLastUpdated ? formatDateTime(officerLastUpdated) : "Waiting for refresh"}</div>
+			</div>
+
+			<div className="space-y-3">
+				<div className="relative">
+					<svg
+						className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+					>
+						<path
+							strokeLinecap="round"
+							strokeLinejoin="round"
+							strokeWidth={2}
+							d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z"
+						/>
+					</svg>
+					<input
+						type="text"
+						value={officerSearch}
+						onChange={(event) => setOfficerSearch(event.target.value)}
+						placeholder="Search officer by name or Sevarth ID..."
+						className="w-full rounded-xl border border-white/10 bg-black/30 py-2 pl-10 pr-4 text-sm text-white placeholder-gray-500 focus:border-white/30 focus:outline-none"
+					/>
+				</div>
+				<button
+					onClick={fetchDutyOfficers}
+					disabled={officerLoading}
+					className="flex w-full items-center justify-center space-x-2 rounded-xl border border-indigo-500/40 bg-indigo-500/10 py-2 text-sm font-medium text-white transition hover:border-indigo-400 disabled:cursor-not-allowed disabled:opacity-60"
+				>
+					{officerLoading ? (
+						<>
+							<div className="h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-transparent" />
+							<span>Refreshing...</span>
+						</>
+					) : (
+						<>
+							<span>Refresh Data</span>
+							<span className="text-xs text-gray-400">(full sync)</span>
+						</>
+					)}
+				</button>
+				{officerError && <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">{officerError}</div>}
+			</div>
+
+			<div className="flex-1 min-h-0 space-y-3 overflow-y-auto pr-1">
+				{officerLoading && officerList.length === 0 ? (
+					<div className="rounded-2xl border border-white/5 bg-black/20 p-6 text-center text-sm text-gray-400">Loading live officers...</div>
+				) : filteredOfficers.length === 0 ? (
+					<div className="rounded-2xl border border-white/5 bg-black/20 p-6 text-center text-sm text-gray-400">No officers found for your search.</div>
+				) : (
+					filteredOfficers.map((officer) => {
+						const status = getOfficerStatusStyles(officer);
+						const isActive = selectedOfficer?.officerId === officer.officerId;
+						return (
+							<button
+								key={officer.officerId}
+								onClick={() => focusOfficer(officer)}
+								className={`w-full rounded-2xl border p-3 text-left transition ${
+									isActive ? "border-emerald-400/60 bg-emerald-500/10" : "border-white/5 bg-black/20 hover:border-white/20"
+								}`}
+							>
+								<div className="flex items-start justify-between">
+									<div>
+										<div className="text-sm font-semibold text-white">{officer.name}</div>
+										<div className="text-xs text-gray-400">{officer.rank}</div>
+									</div>
+									<span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold ${status.chip}`}>{status.label}</span>
+								</div>
+								<div className="mt-2 grid grid-cols-2 gap-2 text-xs text-gray-400">
+									<div>
+										<div className="text-[10px] uppercase tracking-wide text-gray-500">Sevarth ID</div>
+										<div className="font-mono text-white">{officer.sevrathId}</div>
+									</div>
+									<div>
+										<div className="text-[10px] uppercase tracking-wide text-gray-500">Mobile</div>
+										<div>{officer.mobileNumber}</div>
+									</div>
+									<div>
+										<div className="text-[10px] uppercase tracking-wide text-gray-500">Event</div>
+										<div className="text-white">{officer.eventName || "—"}</div>
+									</div>
+									<div>
+										<div className="text-[10px] uppercase tracking-wide text-gray-500">Point</div>
+										<div className="text-white">{officer.pointName || "—"}</div>
+									</div>
+								</div>
+								<div className="mt-2 flex items-center justify-between text-[11px] text-gray-500">
+									<span>Updated: {formatDateTime(officer.location.lastUpdated)}</span>
+									<span>
+										{officer.location.latitude.toFixed(4)}, {officer.location.longitude.toFixed(4)}
+									</span>
+								</div>
+							</button>
+						);
+					})
+				)}
+			</div>
+		</div>
+	);
+
 	// Dial 112 heatmap data
 	const dial112HeatmapData = {
 		data: dial112AllCalls.map((call) => ({
@@ -1075,7 +1375,21 @@ export default function Home() {
 	// };
 
 	// Handle marker clicks
-	const handlePointClick = (point: { lat: number; lng: number; title?: string; group?: string }) => {
+	const handlePointClick = (point: { lat: number; lng: number; title?: string; group?: string; meta?: Record<string, unknown> }) => {
+		const officerId = typeof point.meta?.officerId === "string" ? (point.meta.officerId as string) : undefined;
+		if (officerId && point.group === "Duty Officers") {
+			const matchedOfficer = officerList.find((officer) => officer.officerId === officerId);
+			if (matchedOfficer) {
+				setSelectedOfficer(matchedOfficer);
+				setClickedPoint({
+					lat: matchedOfficer.location.latitude,
+					lng: matchedOfficer.location.longitude,
+					title: matchedOfficer.name,
+					group: "Duty Officers",
+				});
+				return;
+			}
+		}
 		setClickedPoint(point);
 		console.log("Clicked point:", point); // For AI integration
 	};
@@ -1125,6 +1439,10 @@ export default function Home() {
 			</div>
 
 			<Sidebar
+				onActiveSectionChange={(sectionId) => {
+					setOfficerPanelActive(sectionId === "officers");
+				}}
+				officerTrackingContent={officerTrackingContent}
 				settingsContent={
 					<div className="space-y-3">
 						<h3 className="text-sm font-medium text-gray-300 mb-3">Data Categories</h3>
@@ -1176,7 +1494,7 @@ export default function Home() {
 														/>
 													</svg>
 													<div
-														className="w-3 h-3 rounded-full border border-white/20 flex-shrink-0"
+														className="w-3 h-3 rounded-full border border-white/20 shrink-0"
 														style={{ backgroundColor: category.color }}
 													></div>
 													<span className="text-sm font-medium text-gray-200 truncate">{category.name}</span>
@@ -1196,7 +1514,7 @@ export default function Home() {
 													>
 														{pointCount > 0 ? `${pointCount}` : ""}
 													</span>
-													{isLoading && <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>}
+													{isLoading && <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin shrink-0"></div>}
 												</div>
 												<Toggle
 													checked={categoryToggles[category.id] || false}
@@ -1280,7 +1598,7 @@ export default function Home() {
 										<div className="flex items-center space-x-2">
 											<span className="text-sm font-medium text-gray-200">ALL</span>
 											<span
-												className={`px-2 py-0.5 text-xs rounded-full transition-colors flex-shrink-0 ${
+												className={`px-2 py-0.5 text-xs rounded-full transition-colors shrink-0 ${
 													Object.values(processionsVisible).every((visible) => visible)
 														? "bg-green-500/20 text-green-400 border border-green-500/30"
 														: Object.values(processionsVisible).some((visible) => visible)
@@ -1318,14 +1636,14 @@ export default function Home() {
 										<div className="flex-1 min-w-0">
 											<div className="flex items-center space-x-2">
 												<div
-													className="w-3 h-3 rounded-full border border-white/20 flex-shrink-0"
+													className="w-3 h-3 rounded-full border border-white/20 shrink-0"
 													style={{ backgroundColor: festivalGroup.color }}
 												></div>
 												<span className="text-sm font-medium text-gray-200 truncate max-w-[120px]">
 													{festivalGroup.festivalName.length > 14 ? `${festivalGroup.festivalName.substring(0, 14)}...` : festivalGroup.festivalName}
 												</span>
 												<span
-													className={`px-2 py-0.5 text-xs rounded-full transition-colors flex-shrink-0 ${
+													className={`px-2 py-0.5 text-xs rounded-full transition-colors shrink-0 ${
 														processionsVisible[festivalGroup.festivalName]
 															? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
 															: "bg-gray-700/50 text-gray-500 border border-gray-600/30"
@@ -1333,7 +1651,7 @@ export default function Home() {
 												>
 													{processionsVisible[festivalGroup.festivalName] ? "ON" : "OFF"}
 												</span>
-												{processionLoading && <div className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>}
+												{processionLoading && <div className="w-3 h-3 border border-blue-400 border-t-transparent rounded-full animate-spin shrink-0"></div>}
 											</div>
 											<p className="text-xs text-gray-400 mt-0.5 truncate">
 												{festivalGroup.routes.length} route{festivalGroup.routes.length !== 1 ? "s" : ""}
@@ -1607,7 +1925,7 @@ export default function Home() {
 															/>
 														</svg>
 														<div
-															className="w-3 h-3 rounded-full border border-white/20 flex-shrink-0"
+															className="w-3 h-3 rounded-full border border-white/20 shrink-0"
 															style={{ backgroundColor: category.color }}
 														></div>
 														<span className="text-sm font-medium text-gray-200 truncate">{category.name}</span>
@@ -1627,7 +1945,7 @@ export default function Home() {
 														>
 															{pointCount > 0 ? `${pointCount}` : ""}
 														</span>
-														{isLoading && <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>}
+														{isLoading && <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin shrink-0"></div>}
 													</div>
 													<Toggle
 														checked={categoryToggles[category.id] || false}
@@ -1660,7 +1978,9 @@ export default function Home() {
 																			<span className="text-xs font-medium text-gray-300 truncate max-w-[120px]">{subcategory.name}</span>
 																			<span
 																				className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-																					subcategoryToggles[category.id]?.[subcategory.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+																					subcategoryToggles[category.id]?.[subcategory.id]
+																						? `border`
+																						: "bg-gray-700/50 text-gray-500 border border-gray-600/30"
 																				}`}
 																				style={
 																					subcategoryToggles[category.id]?.[subcategory.id]
@@ -1707,16 +2027,7 @@ export default function Home() {
 								<div className="flex justify-between">
 									<span>Active Layers:</span>
 									<span className="font-medium">
-										{
-											[
-												kmlLayerVisible,
-												geoJsonLayerVisible,
-												dial112Visible,
-												dial112HeatmapVisible,
-												accidentVisible,
-												accidentHeatmapVisible,
-											].filter(Boolean).length
-										}
+										{[kmlLayerVisible, geoJsonLayerVisible, dial112Visible, dial112HeatmapVisible, accidentVisible, accidentHeatmapVisible].filter(Boolean).length}
 										/6
 									</span>
 								</div>
@@ -1841,7 +2152,7 @@ export default function Home() {
 				/>
 
 				{/* Street View popup container (top-right) */}
-				<div className="pointer-events-none fixed top-20 right-4 z-[60]">
+				<div className="pointer-events-none fixed top-20 right-4 z-60">
 					<AnimatePresence>
 						{clickedPoint && (
 							<div className="pointer-events-auto">
@@ -1849,6 +2160,24 @@ export default function Home() {
 									key={`${clickedPoint.lat.toFixed(6)}_${clickedPoint.lng.toFixed(6)}`}
 									point={clickedPoint}
 									onClose={() => setClickedPoint(null)}
+								/>
+							</div>
+						)}
+					</AnimatePresence>
+				</div>
+
+				{/* Officer popup - fixed right bottom */}
+				<div className="pointer-events-none fixed bottom-4 right-4 z-60">
+					<AnimatePresence mode="wait">
+						{selectedOfficer && (
+							<div className="pointer-events-auto">
+								<OfficerPopup
+									key={selectedOfficer.officerId}
+									officer={selectedOfficer}
+									onClose={() => {
+										setSelectedOfficer(null);
+										setClickedPoint(null);
+									}}
 								/>
 							</div>
 						)}

@@ -146,9 +146,11 @@ export interface SidebarProps {
 	children: React.ReactNode;
 	processionRoutes?: React.ReactNode;
 	settingsContent?: React.ReactNode;
+	officerTrackingContent?: React.ReactNode;
+	onActiveSectionChange?: (sectionId: string | null) => void;
 }
 
-export default function Sidebar({ children, processionRoutes, settingsContent }: SidebarProps) {
+export default function Sidebar({ children, processionRoutes, settingsContent, officerTrackingContent, onActiveSectionChange }: SidebarProps) {
 	const [isOpen, setIsOpen] = useState(true);
 	const [activeSection, setActiveSection] = useState<string | null>("layers");
 
@@ -158,6 +160,26 @@ export default function Sidebar({ children, processionRoutes, settingsContent }:
 			icon: LayersIcon,
 			title: "Layers",
 			description: "Manage map layers",
+		},
+		{
+			id: "officers",
+			icon: ({ className }: { className?: string }) => (
+				<svg
+					className={className}
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth={2}
+						d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+					/>
+				</svg>
+			),
+			title: "Officer Tracking",
+			description: "Live officer locations",
 		},
 		{
 			id: "search",
@@ -188,13 +210,13 @@ export default function Sidebar({ children, processionRoutes, settingsContent }:
 	// toggleSidebar removed as it's not currently used
 
 	const selectSection = (sectionId: string) => {
-		if (activeSection === sectionId) {
-			setActiveSection(null);
-		} else {
-			setActiveSection(sectionId);
-			if (!isOpen) {
-				setIsOpen(true);
-			}
+		const newSection = activeSection === sectionId ? null : sectionId;
+		setActiveSection(newSection);
+		if (onActiveSectionChange) {
+			onActiveSectionChange(newSection);
+		}
+		if (newSection && !isOpen) {
+			setIsOpen(true);
 		}
 	};
 
@@ -267,6 +289,12 @@ export default function Sidebar({ children, processionRoutes, settingsContent }:
 								{activeSection === "layers" && (
 									<div className="flex-1 overflow-y-auto p-4">
 										<div className="space-y-4">{children}</div>
+									</div>
+								)}
+
+								{activeSection === "officers" && (
+									<div className="flex-1 overflow-y-auto p-4">
+										<div className="space-y-4">{officerTrackingContent}</div>
 									</div>
 								)}
 

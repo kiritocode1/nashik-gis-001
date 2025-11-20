@@ -4,6 +4,55 @@ Keep appending new updates at the bottom. Do not remove older entries.
 
 ---
 
+Date: 2025-11-20
+Author: AI Pair Programmer
+Change Summary:
+
+-   Added “Officer Tracking” sidebar tab with stats, auto-refresh, legend, search, and roster list mirroring provided UI.
+-   Wired `getDutyOfficersLocations` into page state with 30s polling, search filtering, and synchronized Street View/map focus.
+-   Introduced `OfficerPopup` overlay and map marker metadata to keep duty officer details visible with Street View window.
+
+Files Updated:
+
+-   src/app/page.tsx
+    -   Added duty officer state, fetch logic, heatmap marker integration, and officer tracking sidebar content around lines 40-1180.
+    -   Passed tracking content into `Sidebar`, centered officers on map, and rendered `OfficerPopup` near map bottom (~L1127-L1885).
+-   src/components/Sidebar.tsx
+    -   Added Officer Tracking tab metadata, prop, and content slot selection (~L145-L340).
+-   src/components/GoogleMap.tsx
+    -   Introduced `MarkerDefinition.meta` plus propagated metadata through click handler payload (~L8-L425).
+-   src/components/OfficerPopup.tsx
+    -   New component presenting focused officer details with status chip and coordinate copy (entire file).
+
+Notes:
+
+-   Duty officer markers default to green overlay and keep Street View open for the active selection.
+-   Auto-refresh toggle runs every 30s; manual refresh button calls same fetch helper.
+-   Marker metadata is generic for future groups.
+
+Date: 2025-11-20
+Author: AI Pair Programmer
+Change Summary:
+
+-   Added typed duties/officers locations interfaces and fetch helper.
+-   Updated `getDutyOfficersLocations` to use full external URL.
+-   Pointed `BASE_URL` to `https://backend.smartbandobast.in/api`.
+
+Files Updated:
+
+-   src/services/smartBandobastApis.ts
+    -   Added `OfficerDutyLocation`, summary, and response interfaces around lines 720-758.
+    -   Added `getDutyOfficersLocations` fetch function around lines 1066-1086.
+    -   Updated function to use `https://backend.smartbandobast.in/api/duties/officers-locations` directly instead of BASE_URL.
+    -   Set global `BASE_URL` to `https://backend.smartbandobast.in/api`.
+
+Notes:
+
+-   Function accepts optional token and reuses existing `getAuthHeaders`.
+-   Response typing mirrors latest backend payload (curl verified).
+-   Uses full external URL since endpoint is not proxied through Next.js.
+-   All API helpers now default to the external backend host.
+
 Date: 2025-10-28
 Author: AI Pair Programmer
 Change Summary:
@@ -46,7 +95,6 @@ Files Updated:
 Notes:
 
 -   Visual alignment with existing dark UI; no logic changes.
-
 
 Date: 2025-10-10
 Author: AI Pair Programmer
@@ -376,5 +424,40 @@ Notes:
 -   Heatmaps use appropriate color gradients matching marker colors.
 -   External API endpoints: get-atm-locations, get-bank-locations, get-hospitals.
 -   Active layers count updated from /7 to /13.
+
+---
+
+Date: 2025-01-27
+Author: AI Pair Programmer
+Change Summary:
+
+-   Created new API service `smartBandobastApis.ts` with fetch functions for all endpoints from `smart-api.md`.
+-   Implemented in 4 batches: Auth + Events (15), Officers + Location + Lists + Transfer Requests (15), Officers in Police + Lists + Transfer Requests (15), Upload + Point Allocations + Officer Allocation + VIP Visits + Health Check (remaining).
+-   All functions include proper TypeScript types, error handling, and JWT token support.
+-   Fixed TypeScript interface extension issues by defining complete interfaces instead of extending incompatible types.
+
+Files Updated:
+
+-   src/services/smartBandobastApis.ts (new): Complete API service with 80+ endpoints
+    -   Authentication: register, login, send-otp, verify-otp, getCurrentUser, getPoliceUsers, logout
+    -   Events: create, get, getById, update, delete, getByStatus, getForPlanning, approve, reject, updatePlanningStatus, getParishishte, createParishisht, getDeploymentOfficers
+    -   Location: updateLocation, getLiveLocations
+    -   Police Stations: getPoliceStations
+    -   Officers: createOfficer, getOfficersByStation, markVIPAttendance
+    -   Officers in Police: getOfficersInPolice, getOfficersStats, getInchargeOfficers, getOfficerById, getOfficerBySevrathId, getOfficersByRank, getOfficersByPoliceStation, createOfficerInPolice, updateOfficerInPolice, deleteOfficerInPolice
+    -   Lists: getPoliceStationsList, getSpecialUnitsList, getRanksList, getAllLists
+    -   Transfer Requests: getTransferRequestStations, getTransferRequests, getTransferRequestById, createTransferRequest, updateTransferRequestStatus, getTransferRequestStats
+    -   Upload: uploadProfilePicture, getProfile, deleteProfilePicture
+    -   Point Allocations: createPointAllocation, getPointAllocations, getUpcomingPointAllocations, getPointAllocationsByLocation, getPointAllocationsByPoliceStation, getPointAllocationById, updatePointAllocation, deletePointAllocation, bulkUploadPointAllocations
+    -   Officer Allocation: submitOfficerAllocation, getOfficerAllocationRequests, getAvailableOfficers, assignOfficersToEvent, getEventOfficerAllocation
+    -   VIP Visits: createVIPVisit, getVIPVisits, getVIPVisitById, assignOfficersToVIPVisit, getAssignedOfficersForVIPVisit, getAssignedOfficerById, updateOfficerLocationForVIPVisit, getAssignedVIPVisits, getAssignedVIPVisit, createDeploymentReview, getDeploymentReview, handleSPDecision, getSPApprovals, handleSDPODecision, allocateOfficersToVIPVisit, getOfficerAllocations
+    -   Health Check: healthCheck
+
+Notes:
+
+-   All functions follow the same pattern as `externalApi.ts` with proper error handling and TypeScript types.
+-   JWT token support via `getAuthHeaders()` helper function.
+-   No `any` or `undefined` types used - all types are explicitly defined.
+-   File is ~3200 lines with comprehensive type definitions and fetch functions.
 
 ---

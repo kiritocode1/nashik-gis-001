@@ -5,16 +5,24 @@ import { useEffect, useRef, useState, type JSX } from "react";
 import { parseKMLFile } from "@/utils/kmlParser";
 import { Toggle, GooeyFilter } from "./LiquidToggle";
 
+type MarkerDefinition = {
+	position: { lat: number; lng: number };
+	title?: string;
+	label?: string;
+	icon?: string;
+	meta?: Record<string, unknown>;
+};
+
 interface GoogleMapProps {
 	center?: { lat: number; lng: number };
 	zoom?: number;
 	height?: string;
 	width?: string;
 	className?: string;
-	markers?: Array<{ position: { lat: number; lng: number }; title?: string; label?: string; icon?: string }>;
+	markers?: MarkerDefinition[];
 	markerGroups?: Array<{
 		name: string;
-		markers: Array<{ position: { lat: number; lng: number }; title?: string; label?: string; icon?: string }>;
+		markers: MarkerDefinition[];
 		color?: string;
 		icon?: string;
 		visible?: boolean;
@@ -64,7 +72,7 @@ interface GoogleMapProps {
 		}>;
 	}>;
 	selectedPoint?: { lat: number; lng: number; zoom?: number };
-	onPointClick?: (point: { lat: number; lng: number; title?: string; group?: string }) => void;
+	onPointClick?: (point: { lat: number; lng: number; title?: string; group?: string; meta?: Record<string, unknown> }) => void;
 	/** Fired when a procession route (polyline or its endpoints) is clicked */
 	onRouteClick?: (route: {
 		id: number;
@@ -389,6 +397,7 @@ export default function GoogleMap({
 								lng: markerData.position.lng,
 								title: markerData.title || markerData.label,
 								group: "Markers",
+								meta: markerData.meta,
 							});
 						}
 					},
@@ -413,6 +422,7 @@ export default function GoogleMap({
 										lng: markerData.position.lng,
 										title: markerData.title || markerData.label || group.name,
 										group: group.name,
+										meta: markerData.meta,
 									});
 								}
 							},
