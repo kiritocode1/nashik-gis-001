@@ -210,21 +210,27 @@ export default function Home() {
 		return date.toLocaleString();
 	};
 
-	const focusOfficer = useCallback((officer: OfficerDutyLocation, options?: { pan?: boolean; updateStreetView?: boolean }) => {
-		setSelectedOfficer(officer);
-		if (options?.updateStreetView !== false) {
-			setClickedPoint({
-				lat: officer.location.latitude,
-				lng: officer.location.longitude,
-				title: officer.name,
-				group: "Duty Officers",
-				meta: { officerId: officer.officerId },
-			});
-		}
-		if (options?.pan !== false) {
-			setSelectedPoint({ lat: officer.location.latitude, lng: officer.location.longitude, zoom: 17 });
-		}
-	}, []);
+	const focusOfficer = useCallback(
+		(officer: OfficerDutyLocation, options?: { pan?: boolean; updateStreetView?: boolean }) => {
+			// Only allow focusing if panel is active
+			if (!officerPanelActive) return;
+
+			setSelectedOfficer(officer);
+			if (options?.updateStreetView !== false) {
+				setClickedPoint({
+					lat: officer.location.latitude,
+					lng: officer.location.longitude,
+					title: officer.name,
+					group: "Duty Officers",
+					meta: { officerId: officer.officerId },
+				});
+			}
+			if (options?.pan !== false) {
+				setSelectedPoint({ lat: officer.location.latitude, lng: officer.location.longitude, zoom: 17 });
+			}
+		},
+		[officerPanelActive],
+	);
 
 	const fetchDutyOfficersRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -701,13 +707,16 @@ export default function Home() {
 		{
 			name: "Duty Officers",
 			color: "#22C55E",
-			visible: officerPanelActive && officerList.length > 0,
-			markers: officerList.map((officer) => ({
-				position: { lat: officer.location.latitude, lng: officer.location.longitude },
-				title: officer.name,
-				label: "👮",
-				meta: { officerId: officer.officerId },
-			})),
+			visible: officerPanelActive && !officerLoading && officerList.length > 0,
+			markers:
+				officerPanelActive && !officerLoading
+					? officerList.map((officer) => ({
+							position: { lat: officer.location.latitude, lng: officer.location.longitude },
+							title: officer.name,
+							label: "👮",
+							meta: { officerId: officer.officerId },
+					  }))
+					: [],
 		},
 		{
 			name: "Dial 112 Calls",
@@ -1013,25 +1022,25 @@ export default function Home() {
 	const officerCards = [
 		{
 			title: "Total Officers",
-			value: totalOfficerCount,
+			value: officerLoading ? "—" : totalOfficerCount,
 			grad: "from-indigo-500/40 via-indigo-500/10 to-transparent",
 			shadow: "shadow-indigo-500/30",
 		},
 		{
 			title: "Live Location",
-			value: liveCount,
+			value: officerLoading ? "—" : liveCount,
 			grad: "from-emerald-500/40 via-emerald-500/10 to-transparent",
 			shadow: "shadow-emerald-500/30",
 		},
 		{
 			title: "Reported",
-			value: reportedCount,
+			value: officerLoading ? "—" : reportedCount,
 			grad: "from-cyan-500/40 via-cyan-500/10 to-transparent",
 			shadow: "shadow-cyan-500/30",
 		},
 		{
 			title: "Duty Point",
-			value: dutyCount,
+			value: officerLoading ? "—" : dutyCount,
 			grad: "from-pink-500/40 via-pink-500/10 to-transparent",
 			shadow: "shadow-pink-500/30",
 		},
@@ -1127,8 +1136,12 @@ export default function Home() {
 			</div>
 
 			<div className="flex-1 min-h-0 space-y-3 overflow-y-auto pr-1">
-				{officerLoading && officerList.length === 0 ? (
-					<div className="rounded-2xl border border-white/5 bg-black/20 p-6 text-center text-sm text-gray-400">Loading live officers...</div>
+				{officerLoading ? (
+					<div className="flex flex-col items-center justify-center rounded-2xl border border-white/5 bg-black/20 p-8 text-center">
+						<div className="mb-4 h-8 w-8 animate-spin rounded-full border-2 border-white/60 border-t-transparent" />
+						<div className="text-sm font-medium text-gray-300">Loading live officers...</div>
+						<div className="mt-1 text-xs text-gray-500">Fetching location data</div>
+					</div>
 				) : filteredOfficers.length === 0 ? (
 					<div className="rounded-2xl border border-white/5 bg-black/20 p-6 text-center text-sm text-gray-400">No officers found for your search.</div>
 				) : (
@@ -1138,7 +1151,12 @@ export default function Home() {
 						return (
 							<button
 								key={officer.officerId}
-								onClick={() => focusOfficer(officer)}
+								onClick={() => {
+									if (officerPanelActive) {
+										focusOfficer(officer);
+									}
+								}}
+								disabled={!officerPanelActive}
 								className={`w-full rounded-2xl border p-3 text-left transition ${
 									isActive ? "border-emerald-400/60 bg-emerald-500/10" : "border-white/5 bg-black/20 hover:border-white/20"
 								}`}
@@ -1440,7 +1458,12 @@ export default function Home() {
 
 			<Sidebar
 				onActiveSectionChange={(sectionId) => {
-					setOfficerPanelActive(sectionId === "officers");
+					const isOfficersPanel = sectionId === "officers";
+					setOfficerPanelActive(isOfficersPanel);
+					// Fetch officers when panel is first opened if not already loaded
+					if (isOfficersPanel && officerList.length === 0 && !officerLoading && fetchDutyOfficersRef.current) {
+						fetchDutyOfficersRef.current();
+					}
 				}}
 				officerTrackingContent={officerTrackingContent}
 				settingsContent={
