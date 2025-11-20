@@ -703,228 +703,254 @@ export default function Home() {
 	};
 
 	// Marker groups - only real data sources
-	const markerGroups = [
-		{
-			name: "Duty Officers",
-			color: "#22C55E",
-			visible: officerPanelActive && !officerLoading && officerList.length > 0,
-			markers:
-				officerPanelActive && !officerLoading
-					? officerList.map((officer) => ({
-							position: { lat: officer.location.latitude, lng: officer.location.longitude },
-							title: officer.name,
-							label: "👮",
-							meta: { officerId: officer.officerId },
-					  }))
-					: [],
-		},
-		{
-			name: "Dial 112 Calls",
-			color: "#EAB308", // Amber
-			visible: dial112Visible,
-			markers: dial112Calls.map((c) => ({
-				position: { lat: c.latitude, lng: c.longitude },
-				title: c.eventId || c.policeStation || "Dial 112 Call",
-				label: "112",
-			})),
-		},
-		// Real CCTV data from external API
-		{
-			name: "CCTV Cameras",
-			color: "#F97316", // Orange
-			visible: cctvLayerVisible,
-			markers: cctvLocations.map((cctv) => ({
-				position: {
-					lat: typeof cctv.latitude === "string" ? parseFloat(cctv.latitude) : cctv.latitude,
-					lng: typeof cctv.longitude === "string" ? parseFloat(cctv.longitude) : cctv.longitude,
-				},
-				title: cctv.name || cctv.location_name || `CCTV ${cctv.id}`,
-				label: cctv.is_working ? "🎥" : "📷",
-				extraData: {
-					address: cctv.address,
-					cameraType: cctv.camera_type,
-					isWorking: cctv.is_working,
-					ward: cctv.ward,
-					installationDate: cctv.installation_date,
-				},
-			})),
-		},
-		// ATM Locations
-		{
-			name: "ATM Locations",
-			color: "#86EFAC", // Light green
-			visible: atmLayerVisible,
-			markers: atmLocations.map((atm) => ({
-				position: {
-					lat: typeof atm.latitude === "string" ? parseFloat(atm.latitude) : atm.latitude,
-					lng: typeof atm.longitude === "string" ? parseFloat(atm.longitude) : atm.longitude,
-				},
-				title: atm.name || atm.bank_name || `ATM ${atm.id}`,
-				label: "🏧",
-				extraData: {
-					bankName: atm.bank_name,
-					address: atm.address,
-					isWorking: atm.is_working,
-					ward: atm.ward,
-				},
-			})),
-		},
-		// Bank Branches
-		{
-			name: "Bank Branches",
-			color: "#16A34A", // Dark green
-			visible: bankLayerVisible,
-			markers: bankLocations.map((bank) => ({
-				position: {
-					lat: typeof bank.latitude === "string" ? parseFloat(bank.latitude) : bank.latitude,
-					lng: typeof bank.longitude === "string" ? parseFloat(bank.longitude) : bank.longitude,
-				},
-				title: bank.name || bank.bank_name || `Bank ${bank.id}`,
-				label: "🏦",
-				extraData: {
-					bankName: bank.bank_name,
-					branchName: bank.branch_name,
-					address: bank.address,
-					ifscCode: bank.ifsc_code,
-					contactNumber: bank.contact_number,
-					isActive: bank.is_active,
-					ward: bank.ward,
-				},
-			})),
-		},
-		// Hospitals
-		{
-			name: "Hospitals",
-			color: "#FFFFFF", // White
-			visible: hospitalLayerVisible,
-			markers: hospitalLocations.map((hospital) => ({
-				position: {
-					lat: typeof hospital.latitude === "string" ? parseFloat(hospital.latitude) : hospital.latitude,
-					lng: typeof hospital.longitude === "string" ? parseFloat(hospital.longitude) : hospital.longitude,
-				},
-				title: hospital.name || hospital.hospital_name || `Hospital ${hospital.id}`,
-				label: "🏥",
-				extraData: {
-					hospitalName: hospital.hospital_name,
-					address: hospital.address,
-					contactNumber: hospital.contact_number,
-					phone: hospital.phone,
-					type: hospital.type,
-					specialties: hospital.specialties,
-					isActive: hospital.is_active,
-					ward: hospital.ward,
-				},
-			})),
-		},
-		// Police Stations
-		{
-			name: "Police Stations",
-			color: "#3B82F6", // Blue
-			visible: policeLayerVisible,
-			markers: policeLocations.map((police) => ({
-				position: {
-					lat: typeof police.latitude === "string" ? parseFloat(police.latitude) : police.latitude,
-					lng: typeof police.longitude === "string" ? parseFloat(police.longitude) : police.longitude,
-				},
-				title: police.name || `Police Station ${police.id}`,
-				label: "🚔",
-				extraData: {
-					policeName: police.name,
-					address: police.address,
-					description: police.description,
-					status: police.status,
-					verifiedBy: police.verified_by,
-					verifiedAt: police.verified_at,
-					imageUrl: police.image_url,
-					userName: police.user_name,
-					categoryName: police.category_name,
-					categoryColor: police.category_color,
-				},
-			})),
-		},
-		// Accident data from CSV
-		{
-			name: "Accident Records",
-			color: "#EF4444", // Red
-			visible: accidentVisible,
-			markers: (() => {
-				console.log(`🚗 Creating ${accidentRecords.length} accident markers`);
-				return accidentRecords.map((accident) => {
-					console.log("🚗 Creating accident marker:", accident);
-					return {
-						position: { lat: accident.latitude, lng: accident.longitude },
-						title: `Accident ${accident.srNo} - ${accident.accidentCount} accidents`,
-						label: "🚗",
-						extraData: {
-							state: accident.state,
-							district: accident.district,
-							accidentCount: accident.accidentCount,
-							allIndiaRank: accident.allIndiaRank,
-							gridId: accident.gridId,
-							ambulance: accident.ambulance,
-						},
-					};
-				});
-			})(),
-		},
-		// Dynamic categories from API
-		...categories
-			.filter((category) => categoryToggles[category.id])
-			.map((category) => {
-				const points = categoryData[category.id] || [];
-				// Filter by active subcategories if any are enabled
-				const activeSubcats = Object.entries(subcategoryToggles[category.id] || {})
-					.filter(([, enabled]) => enabled)
-					.map(([subcatId]) => parseInt(subcatId));
-
-				let filteredPoints = points;
-				if (activeSubcats.length > 0) {
-					filteredPoints = points.filter((point) => activeSubcats.includes(point.subcategory_id));
-				}
-
-				// Apply viewport filtering and zoom-based decimation like Dial 112
-				if (mapBounds) {
-					const { north, south, east, west, zoom } = mapBounds;
-					let skipFactor = 1;
-					if (zoom < 10) skipFactor = 50;
-					else if (zoom < 12) skipFactor = 20;
-					else if (zoom < 14) skipFactor = 10;
-					else if (zoom < 16) skipFactor = 5;
-
-					// First filter by viewport
-					filteredPoints = filteredPoints.filter((point) => {
-						const lat = typeof point.latitude === "string" ? parseFloat(point.latitude) : parseFloat(String(point.latitude));
-						const lng = typeof point.longitude === "string" ? parseFloat(point.longitude) : parseFloat(String(point.longitude));
-						return lat >= south && lat <= north && lng >= west && lng <= east;
+	const markerGroups = useMemo(
+		() => [
+			{
+				name: "Duty Officers",
+				color: "#22C55E",
+				visible: officerPanelActive && !officerLoading && officerList.length > 0,
+				markers:
+					officerPanelActive && !officerLoading && officerList.length > 0
+						? officerList.map((officer) => ({
+								position: { lat: officer.location.latitude, lng: officer.location.longitude },
+								title: officer.name,
+								label: "👮",
+								meta: { officerId: officer.officerId },
+						  }))
+						: [],
+			},
+			{
+				name: "Dial 112 Calls",
+				color: "#EAB308", // Amber
+				visible: dial112Visible,
+				markers: dial112Calls.map((c) => ({
+					position: { lat: c.latitude, lng: c.longitude },
+					title: c.eventId || c.policeStation || "Dial 112 Call",
+					label: "112",
+				})),
+			},
+			// Real CCTV data from external API
+			{
+				name: "CCTV Cameras",
+				color: "#F97316", // Orange
+				visible: cctvLayerVisible,
+				markers: cctvLocations.map((cctv) => ({
+					position: {
+						lat: typeof cctv.latitude === "string" ? parseFloat(cctv.latitude) : cctv.latitude,
+						lng: typeof cctv.longitude === "string" ? parseFloat(cctv.longitude) : cctv.longitude,
+					},
+					title: cctv.name || cctv.location_name || `CCTV ${cctv.id}`,
+					label: cctv.is_working ? "🎥" : "📷",
+					extraData: {
+						address: cctv.address,
+						cameraType: cctv.camera_type,
+						isWorking: cctv.is_working,
+						ward: cctv.ward,
+						installationDate: cctv.installation_date,
+					},
+				})),
+			},
+			// ATM Locations
+			{
+				name: "ATM Locations",
+				color: "#86EFAC", // Light green
+				visible: atmLayerVisible,
+				markers: atmLocations.map((atm) => ({
+					position: {
+						lat: typeof atm.latitude === "string" ? parseFloat(atm.latitude) : atm.latitude,
+						lng: typeof atm.longitude === "string" ? parseFloat(atm.longitude) : atm.longitude,
+					},
+					title: atm.name || atm.bank_name || `ATM ${atm.id}`,
+					label: "🏧",
+					extraData: {
+						bankName: atm.bank_name,
+						address: atm.address,
+						isWorking: atm.is_working,
+						ward: atm.ward,
+					},
+				})),
+			},
+			// Bank Branches
+			{
+				name: "Bank Branches",
+				color: "#16A34A", // Dark green
+				visible: bankLayerVisible,
+				markers: bankLocations.map((bank) => ({
+					position: {
+						lat: typeof bank.latitude === "string" ? parseFloat(bank.latitude) : bank.latitude,
+						lng: typeof bank.longitude === "string" ? parseFloat(bank.longitude) : bank.longitude,
+					},
+					title: bank.name || bank.bank_name || `Bank ${bank.id}`,
+					label: "🏦",
+					extraData: {
+						bankName: bank.bank_name,
+						branchName: bank.branch_name,
+						address: bank.address,
+						ifscCode: bank.ifsc_code,
+						contactNumber: bank.contact_number,
+						isActive: bank.is_active,
+						ward: bank.ward,
+					},
+				})),
+			},
+			// Hospitals
+			{
+				name: "Hospitals",
+				color: "#FFFFFF", // White
+				visible: hospitalLayerVisible,
+				markers: hospitalLocations.map((hospital) => ({
+					position: {
+						lat: typeof hospital.latitude === "string" ? parseFloat(hospital.latitude) : hospital.latitude,
+						lng: typeof hospital.longitude === "string" ? parseFloat(hospital.longitude) : hospital.longitude,
+					},
+					title: hospital.name || hospital.hospital_name || `Hospital ${hospital.id}`,
+					label: "🏥",
+					extraData: {
+						hospitalName: hospital.hospital_name,
+						address: hospital.address,
+						contactNumber: hospital.contact_number,
+						phone: hospital.phone,
+						type: hospital.type,
+						specialties: hospital.specialties,
+						isActive: hospital.is_active,
+						ward: hospital.ward,
+					},
+				})),
+			},
+			// Police Stations
+			{
+				name: "Police Stations",
+				color: "#3B82F6", // Blue
+				visible: policeLayerVisible,
+				markers: policeLocations.map((police) => ({
+					position: {
+						lat: typeof police.latitude === "string" ? parseFloat(police.latitude) : police.latitude,
+						lng: typeof police.longitude === "string" ? parseFloat(police.longitude) : police.longitude,
+					},
+					title: police.name || `Police Station ${police.id}`,
+					label: "🚔",
+					extraData: {
+						policeName: police.name,
+						address: police.address,
+						description: police.description,
+						status: police.status,
+						verifiedBy: police.verified_by,
+						verifiedAt: police.verified_at,
+						imageUrl: police.image_url,
+						userName: police.user_name,
+						categoryName: police.category_name,
+						categoryColor: police.category_color,
+					},
+				})),
+			},
+			// Accident data from CSV
+			{
+				name: "Accident Records",
+				color: "#EF4444", // Red
+				visible: accidentVisible,
+				markers: (() => {
+					console.log(`🚗 Creating ${accidentRecords.length} accident markers`);
+					return accidentRecords.map((accident) => {
+						console.log("🚗 Creating accident marker:", accident);
+						return {
+							position: { lat: accident.latitude, lng: accident.longitude },
+							title: `Accident ${accident.srNo} - ${accident.accidentCount} accidents`,
+							label: "🚗",
+							extraData: {
+								state: accident.state,
+								district: accident.district,
+								accidentCount: accident.accidentCount,
+								allIndiaRank: accident.allIndiaRank,
+								gridId: accident.gridId,
+								ambulance: accident.ambulance,
+							},
+						};
 					});
+				})(),
+			},
+			// Dynamic categories from API
+			...categories
+				.filter((category) => categoryToggles[category.id])
+				.map((category) => {
+					const points = categoryData[category.id] || [];
+					// Filter by active subcategories if any are enabled
+					const activeSubcats = Object.entries(subcategoryToggles[category.id] || {})
+						.filter(([, enabled]) => enabled)
+						.map(([subcatId]) => parseInt(subcatId));
 
-					// Then apply decimation by zoom
-					filteredPoints = filteredPoints.filter((_, index) => index % skipFactor === 0);
-				}
+					let filteredPoints = points;
+					if (activeSubcats.length > 0) {
+						filteredPoints = points.filter((point) => activeSubcats.includes(point.subcategory_id));
+					}
 
-				return {
-					name: category.name,
-					color: category.color || "#888888",
-					visible: true,
-					markers: filteredPoints.map((point) => ({
-						position: {
-							lat: typeof point.latitude === "string" ? parseFloat(point.latitude) : parseFloat(String(point.latitude)),
-							lng: typeof point.longitude === "string" ? parseFloat(point.longitude) : parseFloat(String(point.longitude)),
-						},
-						title: point.name,
-						label: category.icon,
-						extraData: {
-							description: point.description,
-							address: point.address,
-							categoryName: point.category_name,
-							categoryColor: point.category_color,
-							status: point.status,
-							createdAt: point.created_at,
-						},
-					})),
-				};
-			}),
-	];
+					// Apply viewport filtering and zoom-based decimation like Dial 112
+					if (mapBounds) {
+						const { north, south, east, west, zoom } = mapBounds;
+						let skipFactor = 1;
+						if (zoom < 10) skipFactor = 50;
+						else if (zoom < 12) skipFactor = 20;
+						else if (zoom < 14) skipFactor = 10;
+						else if (zoom < 16) skipFactor = 5;
+
+						// First filter by viewport
+						filteredPoints = filteredPoints.filter((point) => {
+							const lat = typeof point.latitude === "string" ? parseFloat(point.latitude) : parseFloat(String(point.latitude));
+							const lng = typeof point.longitude === "string" ? parseFloat(point.longitude) : parseFloat(String(point.longitude));
+							return lat >= south && lat <= north && lng >= west && lng <= east;
+						});
+
+						// Then apply decimation by zoom
+						filteredPoints = filteredPoints.filter((_, index) => index % skipFactor === 0);
+					}
+
+					return {
+						name: category.name,
+						color: category.color || "#888888",
+						visible: true,
+						markers: filteredPoints.map((point) => ({
+							position: {
+								lat: typeof point.latitude === "string" ? parseFloat(point.latitude) : parseFloat(String(point.latitude)),
+								lng: typeof point.longitude === "string" ? parseFloat(point.longitude) : parseFloat(String(point.longitude)),
+							},
+							title: point.name,
+							label: category.icon,
+							extraData: {
+								description: point.description,
+								address: point.address,
+								categoryName: point.category_name,
+								categoryColor: point.category_color,
+								status: point.status,
+								createdAt: point.created_at,
+							},
+						})),
+					};
+				}),
+		],
+		[
+			officerPanelActive,
+			officerLoading,
+			officerList,
+			dial112Visible,
+			dial112Calls,
+			cctvLayerVisible,
+			cctvLocations,
+			atmLayerVisible,
+			atmLocations,
+			bankLayerVisible,
+			bankLocations,
+			hospitalLayerVisible,
+			hospitalLocations,
+			policeLayerVisible,
+			policeLocations,
+			accidentVisible,
+			accidentRecords,
+			categories,
+			categoryToggles,
+			subcategoryToggles,
+			categoryData,
+			mapBounds,
+		],
+	);
 
 	// Festival color palette
 	const festivalColors = [
@@ -2177,7 +2203,7 @@ export default function Home() {
 				{/* Street View popup container (top-right) */}
 				<div className="pointer-events-none fixed top-20 right-4 z-60">
 					<AnimatePresence>
-						{clickedPoint && (
+						{clickedPoint && !selectedOfficer && (
 							<div className="pointer-events-auto">
 								<StreetViewPopup
 									key={`${clickedPoint.lat.toFixed(6)}_${clickedPoint.lng.toFixed(6)}`}
@@ -2189,8 +2215,8 @@ export default function Home() {
 					</AnimatePresence>
 				</div>
 
-				{/* Officer popup - fixed right bottom */}
-				<div className="pointer-events-none fixed bottom-4 right-4 z-60">
+				{/* Officer popup - fixed right side (replaces Street View when officer selected) */}
+				<div className="pointer-events-none fixed top-20 right-4 z-60">
 					<AnimatePresence mode="wait">
 						{selectedOfficer && (
 							<div className="pointer-events-auto">
