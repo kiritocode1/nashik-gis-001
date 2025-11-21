@@ -530,3 +530,20 @@ Notes:
 
 -   Resize handle appears on hover or active drag at the right edge of the expanded panel.
 -   Width state is local and resets on reload (consider persisting if needed later).
+
+---
+
+Date: 2025-11-21
+Author: AI Pair Programmer
+Change Summary:
+
+-   Increased default sidebar width from 320px to 400px.
+
+Files Updated:
+
+-   src/components/Sidebar.tsx
+    -   Updated `useState(320)` to `useState(400)`.
+
+Notes:
+
+-   Resize constraints (250px - 600px) remain unchanged.

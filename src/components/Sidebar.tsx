@@ -157,7 +157,7 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 	const [showCoordinates, setShowCoordinates] = useState(false);
 	const [enableClustering, setEnableClustering] = useState(false);
 
-	const [sidebarWidth, setSidebarWidth] = useState(320);
+	const [sidebarWidth, setSidebarWidth] = useState(400);
 	const [isResizing, setIsResizing] = useState(false);
 
 	const startResizing = useCallback(() => {
