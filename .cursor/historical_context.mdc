@@ -461,3 +461,72 @@ Notes:
 -   File is ~3200 lines with comprehensive type definitions and fetch functions.
 
 ---
+
+---
+
+Date: 2025-11-21
+Author: AI Pair Programmer
+Change Summary:
+
+-   Replaced `LiquidToggle` with `NewToggle` (SliderV1) in `Sidebar.tsx`.
+-   Added state management for sidebar preference toggles (Auto-save, Show coordinates, Enable clustering).
+-   Removed `GooeyFilter` from `Sidebar.tsx`.
+
+Files Updated:
+
+-   src/components/Sidebar.tsx
+    -   Replaced `Toggle` imports and usage with `SliderV1` (~L4, L340-L355).
+    -   Added state variables for preferences (~L155).
+    -   Removed `GooeyFilter` component usage (~L375).
+
+Notes:
+
+-   `NewToggle` uses `SliderV1` component which requires `checked`, `onChange`, and `id` props.
+-   Added local state to Sidebar to support the new controlled component pattern.
+-   `LiquidToggle` remains in the codebase as it is used by `GoogleMap.tsx`.
+
+---
+
+Date: 2025-11-21
+Author: AI Pair Programmer
+Change Summary:
+
+-   Replaced `LiquidToggle` with `NewToggle` (SliderV1) in `src/app/page.tsx`.
+-   Updated all toggle instances (Officer refresh, Categories, Processions, Map Layers) to use `SliderV1`.
+-   Removed `GooeyFilter` from `src/app/page.tsx`.
+
+Files Updated:
+
+-   src/app/page.tsx
+    -   Replaced `Toggle` imports and usage with `SliderV1`.
+    -   Updated props: mapped `onCheckedChange` to `onChange` and added unique `id` for each slider.
+    -   Removed `GooeyFilter` component.
+
+Notes:
+
+-   `SliderV1` is now the standard toggle component in Sidebar and Page.
+-   `LiquidToggle` still exists for `GoogleMap.tsx` usage (pending future migration if needed).
+
+---
+
+Date: 2025-11-21
+Author: AI Pair Programmer
+Change Summary:
+
+-   Implemented resizable sidebar using drag handle.
+-   Replaced fixed width class (`w-80`) with dynamic style based on `sidebarWidth` state.
+-   Added drag handle to the right edge of the expandable panel.
+-   Constrained width between 250px and 600px.
+
+Files Updated:
+
+-   src/components/Sidebar.tsx
+    -   Added `sidebarWidth` (default 320px) and `isResizing` state.
+    -   Added `startResizing`, `stopResizing`, and `resize` handlers attached to window listeners.
+    -   Updated content panel to use dynamic width style and added resize handle `div`.
+    -   Disabled transitions during resize to ensure smooth dragging.
+
+Notes:
+
+-   Resize handle appears on hover or active drag at the right edge of the expanded panel.
+-   Width state is local and resets on reload (consider persisting if needed later).

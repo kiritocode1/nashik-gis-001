@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Toggle, GooeyFilter } from "./LiquidToggle";
+import { useState, useCallback, useEffect } from "react";
+import { SliderV1 } from "./NewToggle";
 import ChatInterface from "./ChatInterface";
 
 // Simple icon components to avoid external dependencies
@@ -153,6 +153,42 @@ export interface SidebarProps {
 export default function Sidebar({ children, processionRoutes, settingsContent, officerTrackingContent, onActiveSectionChange }: SidebarProps) {
 	const [isOpen, setIsOpen] = useState(true);
 	const [activeSection, setActiveSection] = useState<string | null>("layers");
+	const [autoSave, setAutoSave] = useState(false);
+	const [showCoordinates, setShowCoordinates] = useState(false);
+	const [enableClustering, setEnableClustering] = useState(false);
+
+	const [sidebarWidth, setSidebarWidth] = useState(320);
+	const [isResizing, setIsResizing] = useState(false);
+
+	const startResizing = useCallback(() => {
+		setIsResizing(true);
+	}, []);
+
+	const stopResizing = useCallback(() => {
+		setIsResizing(false);
+	}, []);
+
+	const resize = useCallback(
+		(mouseMoveEvent: MouseEvent) => {
+			if (isResizing) {
+				// Subtract icon bar width (64px / 4rem) from mouse X to get content width
+				const newWidth = mouseMoveEvent.clientX - 64;
+				if (newWidth >= 250 && newWidth <= 600) {
+					setSidebarWidth(newWidth);
+				}
+			}
+		},
+		[isResizing],
+	);
+
+	useEffect(() => {
+		window.addEventListener("mousemove", resize);
+		window.addEventListener("mouseup", stopResizing);
+		return () => {
+			window.removeEventListener("mousemove", resize);
+			window.removeEventListener("mouseup", stopResizing);
+		};
+	}, [resize, stopResizing]);
 
 	const sidebarSections = [
 		{
@@ -260,12 +296,21 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 
 				{/* Expandable Content Panel */}
 				<div
+					style={{ width: isOpen && activeSection ? `${sidebarWidth}px` : "0px" }}
 					className={`
           bg-black/90 backdrop-blur-sm border-r border-gray-900/50 shadow-xl
-          transition-all duration-300 ease-out overflow-hidden
-          ${isOpen && activeSection ? "w-80" : "w-0"}
+          transition-[width] duration-300 ease-out overflow-hidden flex relative
+          ${isResizing ? "transition-none select-none" : ""}
         `}
 				>
+					{/* Resize Handle */}
+					{isOpen && activeSection && (
+						<div
+							className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-500/50 active:bg-blue-500 transition-colors z-50"
+							onMouseDown={startResizing}
+						/>
+					)}
+
 					{activeSection && (
 						<div className="h-full flex flex-col">
 							{/* Header */}
@@ -342,15 +387,27 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 													<div className="space-y-4">
 														<div className="flex items-center justify-between">
 															<span className="text-sm text-gray-300">Auto-save map state</span>
-															<Toggle variant="default" />
+															<SliderV1
+																checked={autoSave}
+																onChange={setAutoSave}
+																id="auto-save"
+															/>
 														</div>
 														<div className="flex items-center justify-between">
 															<span className="text-sm text-gray-300">Show coordinates</span>
-															<Toggle variant="success" />
+															<SliderV1
+																checked={showCoordinates}
+																onChange={setShowCoordinates}
+																id="show-coordinates"
+															/>
 														</div>
 														<div className="flex items-center justify-between">
 															<span className="text-sm text-gray-300">Enable clustering</span>
-															<Toggle variant="warning" />
+															<SliderV1
+																checked={enableClustering}
+																onChange={setEnableClustering}
+																id="enable-clustering"
+															/>
 														</div>
 													</div>
 												</div>
@@ -371,7 +428,6 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 			</div>
 
 			{/* Add the GooeyFilter for the liquid toggle effects */}
-			<GooeyFilter />
 		</div>
 	);
 }

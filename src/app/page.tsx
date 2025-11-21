@@ -3,7 +3,7 @@
 import GoogleMap from "@/components/GoogleMap";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
 import Sidebar from "@/components/Sidebar";
-import { Toggle, GooeyFilter } from "@/components/LiquidToggle";
+import { SliderV1 } from "@/components/NewToggle";
 import { parseKMLFile, type KMLFeature, type KMLMarker } from "@/utils/kmlParser";
 import { AnimatePresence } from "framer-motion";
 import StreetViewPopup from "@/components/StreetViewPopup";
@@ -1109,10 +1109,10 @@ export default function Home() {
 				</div>
 				<div className="flex items-center justify-between text-sm text-gray-300">
 					<span>Auto-refresh (30s)</span>
-					<Toggle
+					<SliderV1
 						checked={officerAutoRefresh}
-						onCheckedChange={setOfficerAutoRefresh}
-						variant="success"
+						onChange={setOfficerAutoRefresh}
+						id="officer-auto-refresh"
 					/>
 				</div>
 				<div className="text-xs text-gray-500">Last updated: {officerLastUpdated ? formatDateTime(officerLastUpdated) : "Waiting for refresh"}</div>
@@ -1565,9 +1565,9 @@ export default function Home() {
 													</span>
 													{isLoading && <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin shrink-0"></div>}
 												</div>
-												<Toggle
+												<SliderV1
 													checked={categoryToggles[category.id] || false}
-													onCheckedChange={(checked) => {
+													onChange={(checked) => {
 														setCategoryToggles((prev) => ({ ...prev, [category.id]: checked }));
 														if (checked) {
 															// Expand category when enabled
@@ -1576,7 +1576,7 @@ export default function Home() {
 															setExpandedCategories(newExpanded);
 														}
 													}}
-													variant="default"
+													id={`settings-category-${category.id}`}
 												/>
 											</div>
 
@@ -1612,9 +1612,9 @@ export default function Home() {
 																		</span>
 																	</div>
 																</div>
-																<Toggle
+																<SliderV1
 																	checked={subcategoryToggles[category.id]?.[subcategory.id] || false}
-																	onCheckedChange={(checked) => {
+																	onChange={(checked) => {
 																		setSubcategoryToggles((prev) => ({
 																			...prev,
 																			[category.id]: {
@@ -1623,7 +1623,7 @@ export default function Home() {
 																			},
 																		}));
 																	}}
-																	variant="default"
+																	id={`settings-subcat-${category.id}-${subcategory.id}`}
 																/>
 															</div>
 														);
@@ -1664,16 +1664,16 @@ export default function Home() {
 										</div>
 										<p className="text-xs text-gray-400 mt-0.5">Toggle all {processedProcessionRoutes.length} festivals</p>
 									</div>
-									<Toggle
+									<SliderV1
 										checked={Object.values(processionsVisible).every((visible) => visible)}
-										onCheckedChange={(checked) => {
+										onChange={(checked) => {
 											const newVisibility: { [festivalName: string]: boolean } = {};
 											processedProcessionRoutes.forEach((festival) => {
 												newVisibility[festival.festivalName] = checked;
 											});
 											setProcessionsVisible(newVisibility);
 										}}
-										variant="default"
+										id="processions-all"
 									/>
 								</div>
 
@@ -1706,15 +1706,15 @@ export default function Home() {
 												{festivalGroup.routes.length} route{festivalGroup.routes.length !== 1 ? "s" : ""}
 											</p>
 										</div>
-										<Toggle
+										<SliderV1
 											checked={processionsVisible[festivalGroup.festivalName] || false}
-											onCheckedChange={(checked) => {
+											onChange={(checked) => {
 												setProcessionsVisible((prev) => ({
 													...prev,
 													[festivalGroup.festivalName]: checked,
 												}));
 											}}
-											variant="default"
+											id={`procession-${festivalGroup.festivalName.replace(/\s+/g, "-").toLowerCase()}`}
 										/>
 									</div>
 								))}
@@ -1803,10 +1803,10 @@ export default function Home() {
 									</div>
 									<p className="text-xs text-gray-400 mt-0.5">Nashik Gramin boundaries (auto-fallback)</p>
 								</div>
-								<Toggle
+								<SliderV1
 									checked={kmlLayerVisible}
-									onCheckedChange={handleKMLToggle}
-									variant="success"
+									onChange={handleKMLToggle}
+									id="layer-kml"
 								/>
 							</div>
 
@@ -1825,10 +1825,10 @@ export default function Home() {
 									</div>
 									<p className="text-xs text-gray-400 mt-0.5">Alternative boundary display</p>
 								</div>
-								<Toggle
+								<SliderV1
 									checked={geoJsonLayerVisible}
-									onCheckedChange={handleGeoJSONToggle}
-									variant="default"
+									onChange={handleGeoJSONToggle}
+									id="layer-geojson"
 								/>
 							</div>
 
@@ -1848,10 +1848,10 @@ export default function Home() {
 									</div>
 									<p className="text-xs text-gray-400 mt-0.5">Viewport-filtered markers ({dial112Calls.length} visible)</p>
 								</div>
-								<Toggle
+								<SliderV1
 									checked={dial112Visible}
-									onCheckedChange={setDial112Visible}
-									variant="warning"
+									onChange={setDial112Visible}
+									id="layer-dial112"
 								/>
 							</div>
 
@@ -1870,10 +1870,10 @@ export default function Home() {
 									</div>
 									<p className="text-xs text-gray-400 mt-0.5">Density visualization ({dial112AllCalls.length} total)</p>
 								</div>
-								<Toggle
+								<SliderV1
 									checked={dial112HeatmapVisible}
-									onCheckedChange={setDial112HeatmapVisible}
-									variant="warning"
+									onChange={setDial112HeatmapVisible}
+									id="layer-dial112-heatmap"
 								/>
 							</div>
 
@@ -1893,10 +1893,10 @@ export default function Home() {
 									</div>
 									<p className="text-xs text-gray-400 mt-0.5">Viewport-filtered markers ({accidentRecords.length} visible)</p>
 								</div>
-								<Toggle
+								<SliderV1
 									checked={accidentVisible}
-									onCheckedChange={setAccidentVisible}
-									variant="danger"
+									onChange={setAccidentVisible}
+									id="layer-accident"
 								/>
 							</div>
 
@@ -1915,10 +1915,10 @@ export default function Home() {
 									</div>
 									<p className="text-xs text-gray-400 mt-0.5">Density visualization ({accidentAllRecords.length} total)</p>
 								</div>
-								<Toggle
+								<SliderV1
 									checked={accidentHeatmapVisible}
-									onCheckedChange={setAccidentHeatmapVisible}
-									variant="danger"
+									onChange={setAccidentHeatmapVisible}
+									id="layer-accident-heatmap"
 								/>
 							</div>
 
@@ -1996,9 +1996,9 @@ export default function Home() {
 														</span>
 														{isLoading && <div className="w-3 h-3 border border-gray-400 border-t-transparent rounded-full animate-spin shrink-0"></div>}
 													</div>
-													<Toggle
+													<SliderV1
 														checked={categoryToggles[category.id] || false}
-														onCheckedChange={(checked) => {
+														onChange={(checked) => {
 															setCategoryToggles((prev) => ({ ...prev, [category.id]: checked }));
 															if (checked) {
 																// Expand category when enabled
@@ -2007,7 +2007,7 @@ export default function Home() {
 																setExpandedCategories(newExpanded);
 															}
 														}}
-														variant="default"
+														id={`layer-category-${category.id}`}
 													/>
 												</div>
 
@@ -2045,9 +2045,9 @@ export default function Home() {
 																			</span>
 																		</div>
 																	</div>
-																	<Toggle
+																	<SliderV1
 																		checked={subcategoryToggles[category.id]?.[subcategory.id] || false}
-																		onCheckedChange={(checked) => {
+																		onChange={(checked) => {
 																			setSubcategoryToggles((prev) => ({
 																				...prev,
 																				[category.id]: {
@@ -2056,7 +2056,7 @@ export default function Home() {
 																				},
 																			}));
 																		}}
-																		variant="default"
+																		id={`layer-subcat-${category.id}-${subcategory.id}`}
 																	/>
 																</div>
 															);
@@ -2313,7 +2313,6 @@ export default function Home() {
 			</div>
 
 			{/* Add the GooeyFilter for the liquid toggle effects */}
-			<GooeyFilter />
 		</>
 	);
 }
