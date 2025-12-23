@@ -216,12 +216,12 @@ export default function ChatInterface() {
 	return (
 		<div className="flex flex-col h-full">
 			{/* Chat Header */}
-			<div className="flex items-center justify-between p-3 border-b border-gray-800/50">
+			<div className="flex items-center justify-between p-3 border-b border-border">
 				<div className="flex items-center space-x-2">
 					<div className="w-2 h-2 rounded-full bg-green-500"></div>
-					<span className="text-sm font-medium text-gray-200">AI Assistant</span>
+					<span className="text-sm font-medium text-foreground">AI Assistant</span>
 					{isModelLoading && (
-						<div className="flex items-center space-x-1 text-xs text-gray-400">
+						<div className="flex items-center space-x-1 text-xs text-muted-foreground">
 							<Loader2 className="w-3 h-3 animate-spin" />
 							<span>Loading model...</span>
 						</div>
@@ -233,7 +233,7 @@ export default function ChatInterface() {
 							setConversation([]);
 							setError(null);
 						}}
-						className="p-1.5 rounded-md hover:bg-gray-800/50 text-gray-400 hover:text-gray-200 transition-colors"
+						className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
 						title="Clear chat"
 					>
 						<Trash2 className="w-4 h-4" />
@@ -247,19 +247,19 @@ export default function ChatInterface() {
 					<div className="flex flex-col items-center justify-center h-full text-center py-8">
 						{isModelLoading ? (
 							<>
-								<Loader2 className="w-8 h-8 text-gray-400 animate-spin mb-3" />
-								<p className="text-sm text-gray-400">Loading AI model...</p>
-								<p className="text-xs text-gray-500 mt-1">This may take a moment</p>
+								<Loader2 className="w-8 h-8 text-muted-foreground animate-spin mb-3" />
+								<p className="text-sm text-muted-foreground">Loading AI model...</p>
+								<p className="text-xs text-muted-foreground mt-1">This may take a moment</p>
 							</>
 						) : (
 							<>
-								<div className="w-12 h-12 rounded-full bg-gray-800/50 flex items-center justify-center mb-3">
-									<svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+									<svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
 									</svg>
 								</div>
-								<p className="text-sm text-gray-300 mb-1">Start a conversation</p>
-								<p className="text-xs text-gray-500">Ask about crime data, emergency calls, CCTV, or police stations</p>
+								<p className="text-sm text-muted-foreground mb-1">Start a conversation</p>
+								<p className="text-xs text-muted-foreground">Ask about crime data, emergency calls, CCTV, or police stations</p>
 							</>
 						)}
 					</div>
@@ -268,11 +268,10 @@ export default function ChatInterface() {
 						{conversation.map((msg, idx) => (
 							<div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
 								<div
-									className={`max-w-[85%] rounded-lg px-3 py-2 ${
-										msg.role === "user"
-											? "bg-blue-600/20 border border-blue-500/30 text-blue-200"
-											: "bg-gray-800/50 border border-gray-700/50 text-gray-200"
-									}`}
+									className={`max-w-[85%] rounded-lg px-3 py-2 ${msg.role === "user"
+											? "bg-blue-100 border border-blue-200 text-blue-900"
+											: "bg-muted border border-border text-foreground"
+										}`}
 								>
 									<p className="text-xs font-medium mb-1 opacity-70">{msg.role === "user" ? "You" : "Assistant"}</p>
 									<p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
@@ -281,10 +280,10 @@ export default function ChatInterface() {
 						))}
 						{isProcessing && (
 							<div className="flex justify-start">
-								<div className="bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2">
+								<div className="bg-muted border border-border rounded-lg px-3 py-2">
 									<div className="flex items-center space-x-2">
-										<Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-										<span className="text-xs text-gray-400">Thinking...</span>
+										<Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />
+										<span className="text-xs text-muted-foreground">Thinking...</span>
 									</div>
 								</div>
 							</div>
@@ -302,7 +301,7 @@ export default function ChatInterface() {
 			)}
 
 			{/* Input Area */}
-			<div className="border-t border-gray-800/50 p-3">
+			<div className="border-t border-border p-3">
 				<form onSubmit={handleSubmit} className="flex items-end space-x-2">
 					<div className="flex-1 relative">
 						<input
@@ -311,18 +310,17 @@ export default function ChatInterface() {
 							onChange={(e) => setInputText(e.target.value)}
 							placeholder={isReady ? "Type your message..." : "Loading model..."}
 							disabled={!isReady || isProcessing}
-							className="w-full px-3 py-2 bg-gray-900/50 border border-gray-800/50 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-700/50 focus:border-gray-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
+							className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-input disabled:opacity-50 disabled:cursor-not-allowed"
 						/>
 					</div>
 					<button
 						type="button"
 						onClick={handleToggleRecording}
 						disabled={isProcessing || !isReady}
-						className={`p-2 rounded-lg transition-colors flex-shrink-0 ${
-							isRecording
-								? "bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30"
-								: "bg-gray-800/50 border border-gray-700/50 text-gray-400 hover:bg-gray-700/50 hover:text-gray-300"
-						} disabled:opacity-50 disabled:cursor-not-allowed`}
+						className={`p-2 rounded-lg transition-colors flex-shrink-0 ${isRecording
+								? "bg-red-100 border border-red-200 text-red-600 hover:bg-red-200"
+								: "bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+							} disabled:opacity-50 disabled:cursor-not-allowed`}
 						title={isRecording ? "Stop recording" : "Start voice recording"}
 					>
 						{isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}

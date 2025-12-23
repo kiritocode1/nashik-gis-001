@@ -712,11 +712,11 @@ export default function Home() {
 				markers:
 					officerPanelActive && !officerLoading && officerList.length > 0
 						? officerList.map((officer) => ({
-								position: { lat: officer.location.latitude, lng: officer.location.longitude },
-								title: officer.name,
-								label: "👮",
-								meta: { officerId: officer.officerId },
-						  }))
+							position: { lat: officer.location.latitude, lng: officer.location.longitude },
+							title: officer.name,
+							label: "👮",
+							meta: { officerId: officer.officerId },
+						}))
 						: [],
 			},
 			{
@@ -1183,9 +1183,8 @@ export default function Home() {
 									}
 								}}
 								disabled={!officerPanelActive}
-								className={`w-full rounded-2xl border p-3 text-left transition ${
-									isActive ? "border-emerald-400/60 bg-emerald-500/10" : "border-white/5 bg-black/20 hover:border-white/20"
-								}`}
+								className={`w-full rounded-2xl border p-3 text-left transition ${isActive ? "border-emerald-400/60 bg-emerald-500/10" : "border-white/5 bg-black/20 hover:border-white/20"
+									}`}
 							>
 								<div className="flex items-start justify-between">
 									<div>
@@ -1470,9 +1469,9 @@ export default function Home() {
 	return (
 		<>
 			{/* Header */}
-			<div className="fixed top-0 left-0 right-0 z-50 bg-black backdrop-blur-md border-b border-white/10">
+			<div className="fixed top-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-md border-b border-border">
 				<div className="flex items-center justify-between h-16 px-6">
-					<h1 className="text-2xl font-bold text-white tracking-wide">NASHIK GIS 2.0</h1>
+					<h1 className="text-2xl font-bold text-foreground tracking-wide">CSN GIS System</h1>
 					<a
 						href="/health"
 						className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
@@ -1494,12 +1493,12 @@ export default function Home() {
 				officerTrackingContent={officerTrackingContent}
 				settingsContent={
 					<div className="space-y-3">
-						<h3 className="text-sm font-medium text-gray-300 mb-3">Data Categories</h3>
+						<h3 className="text-sm font-medium text-foreground mb-3">Data Categories</h3>
 						{categories.length === 0 ? (
 							<div className="text-center py-8">
-								<div className="text-gray-400 mb-4">
-									<div className="w-12 h-12 mx-auto mb-3 border-2 border-gray-600 border-t-gray-200 rounded-full animate-spin"></div>
-									<p className="text-sm text-gray-400 mb-2">Loading categories...</p>
+								<div className="text-muted-foreground mb-4">
+									<div className="w-12 h-12 mx-auto mb-3 border-2 border-muted-foreground border-t-foreground rounded-full animate-spin"></div>
+									<p className="text-sm text-muted-foreground mb-2">Loading categories...</p>
 								</div>
 							</div>
 						) : (
@@ -1530,7 +1529,7 @@ export default function Home() {
 												>
 													{/* Chevron Icon */}
 													<svg
-														className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+														className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-90" : ""}`}
 														fill="none"
 														stroke="currentColor"
 														viewBox="0 0 24 24"
@@ -1543,21 +1542,20 @@ export default function Home() {
 														/>
 													</svg>
 													<div
-														className="w-3 h-3 rounded-full border border-white/20 shrink-0"
+														className="w-3 h-3 rounded-full border border-border shrink-0"
 														style={{ backgroundColor: category.color }}
 													></div>
-													<span className="text-sm font-medium text-gray-200 truncate">{category.name}</span>
+													<span className="text-sm font-medium text-foreground truncate">{category.name}</span>
 													<span
-														className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-															categoryToggles[category.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-														}`}
+														className={`px-2 py-0.5 text-xs rounded-full transition-colors ${categoryToggles[category.id] ? `border` : "bg-muted text-muted-foreground border border-border"
+															}`}
 														style={
 															categoryToggles[category.id]
 																? {
-																		background: `${category.color}20`,
-																		color: category.color,
-																		borderColor: `${category.color}30`,
-																  }
+																	background: `${category.color}20`,
+																	color: category.color,
+																	borderColor: `${category.color}30`,
+																}
 																: undefined
 														}
 													>
@@ -1593,18 +1591,17 @@ export default function Home() {
 															>
 																<div className="flex-1 min-w-0">
 																	<div className="flex items-center space-x-2">
-																		<span className="text-xs font-medium text-gray-300 truncate max-w-[120px]">{subcategory.name}</span>
+																		<span className="text-xs font-medium text-foreground truncate max-w-[120px]">{subcategory.name}</span>
 																		<span
-																			className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-																				subcategoryToggles[category.id]?.[subcategory.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-																			}`}
+																			className={`px-2 py-0.5 text-xs rounded-full transition-colors ${subcategoryToggles[category.id]?.[subcategory.id] ? `border` : "bg-muted text-muted-foreground border border-border"
+																				}`}
 																			style={
 																				subcategoryToggles[category.id]?.[subcategory.id]
 																					? {
-																							background: `${category.color}20`,
-																							color: category.color,
-																							borderColor: `${category.color}30`,
-																					  }
+																						background: `${category.color}20`,
+																						color: category.color,
+																						borderColor: `${category.color}30`,
+																					}
 																					: undefined
 																			}
 																		>
@@ -1642,24 +1639,23 @@ export default function Home() {
 						{processedProcessionRoutes.length > 0 ? (
 							<div className="space-y-3">
 								{/* ALL Toggle */}
-								<div className="flex items-center justify-between cursor-pointer group border-b border-gray-700/50 pb-3 mb-3">
+								<div className="flex items-center justify-between cursor-pointer group border-b border-border pb-3 mb-3">
 									<div className="flex-1 min-w-0">
 										<div className="flex items-center space-x-2">
-											<span className="text-sm font-medium text-gray-200">ALL</span>
+											<span className="text-sm font-medium text-foreground">ALL</span>
 											<span
-												className={`px-2 py-0.5 text-xs rounded-full transition-colors shrink-0 ${
-													Object.values(processionsVisible).every((visible) => visible)
+												className={`px-2 py-0.5 text-xs rounded-full transition-colors shrink-0 ${Object.values(processionsVisible).every((visible) => visible)
 														? "bg-green-500/20 text-green-400 border border-green-500/30"
 														: Object.values(processionsVisible).some((visible) => visible)
-														? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-														: "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-												}`}
+															? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+															: "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+													}`}
 											>
 												{Object.values(processionsVisible).every((visible) => visible)
 													? "ALL ON"
 													: Object.values(processionsVisible).some((visible) => visible)
-													? "SOME ON"
-													: "ALL OFF"}
+														? "SOME ON"
+														: "ALL OFF"}
 											</span>
 										</div>
 										<p className="text-xs text-gray-400 mt-0.5">Toggle all {processedProcessionRoutes.length} festivals</p>
@@ -1692,11 +1688,10 @@ export default function Home() {
 													{festivalGroup.festivalName.length > 14 ? `${festivalGroup.festivalName.substring(0, 14)}...` : festivalGroup.festivalName}
 												</span>
 												<span
-													className={`px-2 py-0.5 text-xs rounded-full transition-colors shrink-0 ${
-														processionsVisible[festivalGroup.festivalName]
+													className={`px-2 py-0.5 text-xs rounded-full transition-colors shrink-0 ${processionsVisible[festivalGroup.festivalName]
 															? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
 															: "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-													}`}
+														}`}
 												>
 													{processionsVisible[festivalGroup.festivalName] ? "ON" : "OFF"}
 												</span>
@@ -1786,22 +1781,21 @@ export default function Home() {
 			>
 				<div className="space-y-4">
 					<div className="space-y-3">
-						<h3 className="text-sm font-medium text-gray-300 mb-3">Map Layers</h3>
+						<h3 className="text-sm font-medium text-foreground mb-3">Map Layers</h3>
 						<div className="space-y-3">
 							{/* KML Layer Toggle */}
 							<div className="flex items-center justify-between cursor-pointer group">
 								<div className="flex-1">
 									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🗺️ KML Boundaries</span>
+										<span className="text-sm font-medium text-foreground">🗺️ KML Boundaries</span>
 										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												kmlLayerVisible ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
+											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${kmlLayerVisible ? "bg-green-500/20 text-green-600 border border-green-500/30" : "bg-muted text-muted-foreground border border-border"
+												}`}
 										>
 											{kmlLayerVisible ? "ON" : "OFF"}
 										</span>
 									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Nashik Gramin boundaries (auto-fallback)</p>
+									<p className="text-xs text-muted-foreground mt-0.5">Nashik Gramin boundaries (auto-fallback)</p>
 								</div>
 								<SliderV1
 									checked={kmlLayerVisible}
@@ -1814,16 +1808,15 @@ export default function Home() {
 							<div className="flex items-center justify-between cursor-pointer group">
 								<div className="flex-1">
 									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🗺️ GeoJSON Layer</span>
+										<span className="text-sm font-medium text-foreground">🗺️ GeoJSON Layer</span>
 										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												geoJsonLayerVisible ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
+											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${geoJsonLayerVisible ? "bg-cyan-500/20 text-cyan-600 border border-cyan-500/30" : "bg-muted text-muted-foreground border border-border"
+												}`}
 										>
 											{geoJsonLayerVisible ? "ON" : "OFF"}
 										</span>
 									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Alternative boundary display</p>
+									<p className="text-xs text-muted-foreground mt-0.5">Alternative boundary display</p>
 								</div>
 								<SliderV1
 									checked={geoJsonLayerVisible}
@@ -1836,17 +1829,16 @@ export default function Home() {
 							<div className="flex items-center justify-between cursor-pointer group">
 								<div className="flex-1">
 									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🚨 Dial 112 Points</span>
+										<span className="text-sm font-medium text-foreground">🚨 Dial 112 Points</span>
 										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												dial112Visible ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
+											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${dial112Visible ? "bg-amber-500/20 text-amber-600 border border-amber-500/30" : "bg-muted text-muted-foreground border border-border"
+												}`}
 										>
 											{dial112Visible ? "ON" : "OFF"}
 										</span>
 										{dial112Loading && <div className="w-3 h-3 border border-amber-400 border-t-transparent rounded-full animate-spin"></div>}
 									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Viewport-filtered markers ({dial112Calls.length} visible)</p>
+									<p className="text-xs text-muted-foreground mt-0.5">Viewport-filtered markers ({dial112Calls.length} visible)</p>
 								</div>
 								<SliderV1
 									checked={dial112Visible}
@@ -1859,16 +1851,15 @@ export default function Home() {
 							<div className="flex items-center justify-between cursor-pointer group">
 								<div className="flex-1">
 									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🔥 Dial 112 Heatmap</span>
+										<span className="text-sm font-medium text-foreground">🔥 Dial 112 Heatmap</span>
 										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												dial112HeatmapVisible ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
+											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${dial112HeatmapVisible ? "bg-amber-500/20 text-amber-600 border border-amber-500/30" : "bg-muted text-muted-foreground border border-border"
+												}`}
 										>
 											{dial112HeatmapVisible ? "ON" : "OFF"}
 										</span>
 									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Density visualization ({dial112AllCalls.length} total)</p>
+									<p className="text-xs text-muted-foreground mt-0.5">Density visualization ({dial112AllCalls.length} total)</p>
 								</div>
 								<SliderV1
 									checked={dial112HeatmapVisible}
@@ -1881,17 +1872,16 @@ export default function Home() {
 							<div className="flex items-center justify-between cursor-pointer group">
 								<div className="flex-1">
 									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🚗 Accident Points</span>
+										<span className="text-sm font-medium text-foreground">🚗 Accident Points</span>
 										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												accidentVisible ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
+											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${accidentVisible ? "bg-red-500/20 text-red-600 border border-red-500/30" : "bg-muted text-muted-foreground border border-border"
+												}`}
 										>
 											{accidentVisible ? "ON" : "OFF"}
 										</span>
 										{accidentLoading && <div className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin"></div>}
 									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Viewport-filtered markers ({accidentRecords.length} visible)</p>
+									<p className="text-xs text-muted-foreground mt-0.5">Viewport-filtered markers ({accidentRecords.length} visible)</p>
 								</div>
 								<SliderV1
 									checked={accidentVisible}
@@ -1904,16 +1894,15 @@ export default function Home() {
 							<div className="flex items-center justify-between cursor-pointer group">
 								<div className="flex-1">
 									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-gray-200">🔥 Accident Heatmap</span>
+										<span className="text-sm font-medium text-foreground">🔥 Accident Heatmap</span>
 										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												accidentHeatmapVisible ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
+											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${accidentHeatmapVisible ? "bg-red-500/20 text-red-600 border border-red-500/30" : "bg-muted text-muted-foreground border border-border"
+												}`}
 										>
 											{accidentHeatmapVisible ? "ON" : "OFF"}
 										</span>
 									</div>
-									<p className="text-xs text-gray-400 mt-0.5">Density visualization ({accidentAllRecords.length} total)</p>
+									<p className="text-xs text-muted-foreground mt-0.5">Density visualization ({accidentAllRecords.length} total)</p>
 								</div>
 								<SliderV1
 									checked={accidentHeatmapVisible}
@@ -1923,7 +1912,7 @@ export default function Home() {
 							</div>
 
 							{/* Divider before categories */}
-							<div className="border-t border-gray-700/50 pt-3 mt-3"></div>
+							<div className="border-t border-border pt-3 mt-3"></div>
 
 							{/* Categories */}
 							{categories.length === 0 ? (
@@ -1979,16 +1968,15 @@ export default function Home() {
 														></div>
 														<span className="text-sm font-medium text-gray-200 truncate">{category.name}</span>
 														<span
-															className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-																categoryToggles[category.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-															}`}
+															className={`px-2 py-0.5 text-xs rounded-full transition-colors ${categoryToggles[category.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+																}`}
 															style={
 																categoryToggles[category.id]
 																	? {
-																			background: `${category.color}20`,
-																			color: category.color,
-																			borderColor: `${category.color}30`,
-																	  }
+																		background: `${category.color}20`,
+																		color: category.color,
+																		borderColor: `${category.color}30`,
+																	}
 																	: undefined
 															}
 														>
@@ -2026,18 +2014,17 @@ export default function Home() {
 																		<div className="flex items-center space-x-2">
 																			<span className="text-xs font-medium text-gray-300 truncate max-w-[120px]">{subcategory.name}</span>
 																			<span
-																				className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-																					subcategoryToggles[category.id]?.[subcategory.id]
+																				className={`px-2 py-0.5 text-xs rounded-full transition-colors ${subcategoryToggles[category.id]?.[subcategory.id]
 																						? `border`
 																						: "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-																				}`}
+																					}`}
 																				style={
 																					subcategoryToggles[category.id]?.[subcategory.id]
 																						? {
-																								background: `${category.color}20`,
-																								color: category.color,
-																								borderColor: `${category.color}30`,
-																						  }
+																							background: `${category.color}20`,
+																							color: category.color,
+																							borderColor: `${category.color}30`,
+																						}
 																						: undefined
 																				}
 																			>
@@ -2123,16 +2110,16 @@ export default function Home() {
 						gradient: dial112HeatmapVisible
 							? dial112HeatmapData.gradient
 							: accidentHeatmapVisible
-							? accidentHeatmapData.gradient
-							: atmHeatmapVisible
-							? atmHeatmapData.gradient
-							: bankHeatmapVisible
-							? bankHeatmapData.gradient
-							: hospitalHeatmapVisible
-							? hospitalHeatmapData.gradient
-							: policeHeatmapVisible
-							? policeHeatmapData.gradient
-							: dial112HeatmapData.gradient,
+								? accidentHeatmapData.gradient
+								: atmHeatmapVisible
+									? atmHeatmapData.gradient
+									: bankHeatmapVisible
+										? bankHeatmapData.gradient
+										: hospitalHeatmapVisible
+											? hospitalHeatmapData.gradient
+											: policeHeatmapVisible
+												? policeHeatmapData.gradient
+												: dial112HeatmapData.gradient,
 					}}
 					kmlLayer={kmlLayerConfig}
 					geoJsonLayer={geoJsonLayerConfig}

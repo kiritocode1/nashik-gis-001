@@ -261,10 +261,10 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 			{/* Sidebar Container */}
 			<div className="relative flex pointer-events-auto">
 				{/* Icon Bar */}
-				<div className="w-16 bg-black/90 backdrop-blur-sm border-r border-gray-900/50 flex flex-col items-center py-4 space-y-2 shadow-xl">
+				<div className="w-16 bg-background/95 backdrop-blur-sm border-r border-border flex flex-col items-center py-4 space-y-2 shadow-xl">
 					{/* Logo */}
-					<div className="mb-6 p-2 rounded-lg bg-gray-900/30 border border-gray-800/40">
-						<MapIcon className="w-6 h-6 text-gray-200" />
+					<div className="mb-6 p-2 rounded-lg bg-muted border border-border">
+						<MapIcon className="w-6 h-6 text-foreground" />
 					</div>
 
 					{/* Section Icons */}
@@ -279,14 +279,14 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 								className={`
                   group relative w-10 h-10 rounded-lg flex items-center justify-center
                   transition-all duration-200 ease-out
-                  ${isActive ? "bg-gray-900/40 border border-gray-800/60 text-gray-100" : "hover:bg-gray-900/30 text-gray-400 hover:text-gray-100"}
+                  ${isActive ? "bg-muted border border-border text-foreground" : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"}
                 `}
 								title={section.title}
 							>
 								<IconComponent className="w-5 h-5" />
 
 								{/* Tooltip */}
-								<div className="absolute left-full ml-3 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+								<div className="absolute left-full ml-3 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-md border border-border">
 									{section.title}
 								</div>
 							</button>
@@ -298,7 +298,7 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 				<div
 					style={{ width: isOpen && activeSection ? `${sidebarWidth}px` : "0px" }}
 					className={`
-          bg-black/90 backdrop-blur-sm border-r border-gray-900/50 shadow-xl
+          bg-background/95 backdrop-blur-sm border-r border-border shadow-xl
           transition-[width] duration-300 ease-out overflow-hidden flex relative
           ${isResizing ? "transition-none select-none" : ""}
         `}
@@ -314,15 +314,15 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 					{activeSection && (
 						<div className="h-full flex flex-col">
 							{/* Header */}
-							<div className="p-4 border-b border-gray-900/50">
+							<div className="p-4 border-b border-border">
 								<div className="flex items-center justify-between">
 									<div>
-										<h2 className="text-lg font-semibold text-white">{sidebarSections.find((s) => s.id === activeSection)?.title}</h2>
-										<p className="text-sm text-gray-400 mt-1">{sidebarSections.find((s) => s.id === activeSection)?.description}</p>
+										<h2 className="text-lg font-semibold text-foreground">{sidebarSections.find((s) => s.id === activeSection)?.title}</h2>
+										<p className="text-sm text-muted-foreground mt-1">{sidebarSections.find((s) => s.id === activeSection)?.description}</p>
 									</div>
 									<button
 										onClick={() => setActiveSection(null)}
-										className="p-1 rounded-md hover:bg-gray-900/50 text-gray-400 hover:text-gray-100 transition-colors"
+										className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
 									>
 										<ChevronLeftIcon className="w-4 h-4" />
 									</button>
@@ -347,21 +347,21 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 									<div className="flex-1 overflow-y-auto p-4">
 										<div className="space-y-4">
 											<div className="relative">
-												<SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+												<SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
 												<input
 													type="text"
 													placeholder="Search locations..."
-													className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-800/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-600/50 focus:border-gray-600/50"
+													className="w-full pl-10 pr-4 py-2 bg-muted border border-border rounded-lg text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
 												/>
 											</div>
 
-											<div className="text-sm text-gray-400">
+											<div className="text-sm text-muted-foreground">
 												<p>Quick locations:</p>
 												<div className="mt-2 space-y-1">
 													{["Union Square", "Golden Gate Park", "Fisherman's Wharf"].map((location) => (
 														<button
 															key={location}
-															className="block w-full text-left px-3 py-2 rounded-md hover:bg-gray-900/50 text-gray-300 hover:text-white transition-colors"
+															className="block w-full text-left px-3 py-2 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
 														>
 															📍 {location}
 														</button>
@@ -383,10 +383,10 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 										<div className="space-y-4">
 											{settingsContent || (
 												<div className="space-y-3">
-													<h3 className="text-sm font-medium text-gray-300">Preferences</h3>
+													<h3 className="text-sm font-medium text-muted-foreground">Preferences</h3>
 													<div className="space-y-4">
 														<div className="flex items-center justify-between">
-															<span className="text-sm text-gray-300">Auto-save map state</span>
+															<span className="text-sm text-muted-foreground">Auto-save map state</span>
 															<SliderV1
 																checked={autoSave}
 																onChange={setAutoSave}
@@ -394,7 +394,7 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 															/>
 														</div>
 														<div className="flex items-center justify-between">
-															<span className="text-sm text-gray-300">Show coordinates</span>
+															<span className="text-sm text-muted-foreground">Show coordinates</span>
 															<SliderV1
 																checked={showCoordinates}
 																onChange={setShowCoordinates}
@@ -402,7 +402,7 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 															/>
 														</div>
 														<div className="flex items-center justify-between">
-															<span className="text-sm text-gray-300">Enable clustering</span>
+															<span className="text-sm text-muted-foreground">Enable clustering</span>
 															<SliderV1
 																checked={enableClustering}
 																onChange={setEnableClustering}
