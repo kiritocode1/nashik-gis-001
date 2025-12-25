@@ -1073,9 +1073,9 @@ export async function getDutyOfficersLocations(token?: string): Promise<Officers
 			headers: token ? getAuthHeaders(token) : getAuthHeaders(),
 		});
 
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-		}
+		// if (!response.ok) {
+		// 	throw new Error(`HTTP error! status: ${response.status}`);
+		// }
 
 		const result: OfficersLocationsResponse = await response.json();
 		return result;

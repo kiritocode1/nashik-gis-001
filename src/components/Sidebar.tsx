@@ -142,20 +142,51 @@ const ChatIcon = ({ className }: { className?: string }) => (
 	</svg>
 );
 
+export interface SearchResult {
+	id: string | number;
+	title: string;
+	subtitle?: string;
+	type: string;
+	position: { lat: number; lng: number };
+}
+
 export interface SidebarProps {
 	children: React.ReactNode;
 	processionRoutes?: React.ReactNode;
 	settingsContent?: React.ReactNode;
 	officerTrackingContent?: React.ReactNode;
 	onActiveSectionChange?: (sectionId: string | null) => void;
+	onSearch?: (query: string) => void;
+	searchResults?: SearchResult[];
+	onSearchResultClick?: (result: SearchResult) => void;
+	isSearching?: boolean;
 }
 
-export default function Sidebar({ children, processionRoutes, settingsContent, officerTrackingContent, onActiveSectionChange }: SidebarProps) {
+export default function Sidebar({
+	children,
+	processionRoutes,
+	settingsContent,
+	officerTrackingContent,
+	onActiveSectionChange,
+	onSearch,
+	searchResults = [],
+	onSearchResultClick,
+	isSearching = false,
+}: SidebarProps) {
 	const [isOpen, setIsOpen] = useState(true);
 	const [activeSection, setActiveSection] = useState<string | null>("layers");
 	const [autoSave, setAutoSave] = useState(false);
 	const [showCoordinates, setShowCoordinates] = useState(false);
 	const [enableClustering, setEnableClustering] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
+
+	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const query = e.target.value;
+		setSearchQuery(query);
+		if (onSearch) {
+			onSearch(query);
+		}
+	};
 
 	const [sidebarWidth, setSidebarWidth] = useState(400);
 	const [isResizing, setIsResizing] = useState(false);
@@ -346,27 +377,62 @@ export default function Sidebar({ children, processionRoutes, settingsContent, o
 								{activeSection === "search" && (
 									<div className="flex-1 overflow-y-auto p-4">
 										<div className="space-y-4">
-											<div className="relative">
-												<SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-												<input
-													type="text"
-													placeholder="Search locations..."
-													className="w-full pl-10 pr-4 py-2 bg-gray-900/50 border border-gray-800/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-600/50 focus:border-gray-600/50"
-												/>
+											<div className="sticky top-0 bg-black/50 backdrop-blur-md pb-4 z-10">
+												<div className="relative">
+													<SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+													<input
+														type="text"
+														placeholder="Search locations..."
+														value={searchQuery}
+														onChange={handleSearchChange}
+														className="w-full pl-10 pr-10 py-2 bg-gray-900/50 border border-gray-800/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-600/50 focus:border-gray-600/50 transition-all"
+													/>
+													{isSearching && (
+														<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+															<div className="w-4 h-4 border-2 border-primary/50 border-t-primary rounded-full animate-spin" />
+														</div>
+													)}
+												</div>
 											</div>
 
-											<div className="text-sm text-gray-400">
-												<p>Quick locations:</p>
-												<div className="mt-2 space-y-1">
-													{["Union Square", "Golden Gate Park", "Fisherman's Wharf"].map((location) => (
+											<div className="space-y-2">
+												{searchResults && searchResults.length > 0 ? (
+													searchResults.map((result) => (
 														<button
-															key={location}
-															className="block w-full text-left px-3 py-2 rounded-md hover:bg-gray-900/50 text-gray-300 hover:text-white transition-colors"
+															key={`${result.type}-${result.id}`}
+															onClick={() => onSearchResultClick?.(result)}
+															className="w-full text-left p-3 rounded-lg bg-gray-900/30 hover:bg-gray-800/50 border border-gray-800/30 hover:border-gray-700 transition-all group"
 														>
-															📍 {location}
+															<div className="flex items-start justify-between">
+																<div>
+																	<h4 className="font-medium text-gray-200 group-hover:text-white transition-colors">
+																		{result.title}
+																	</h4>
+																	{result.subtitle && <p className="text-xs text-gray-500 mt-0.5">{result.subtitle}</p>}
+																</div>
+																<span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">
+																	{result.type}
+																</span>
+															</div>
 														</button>
-													))}
-												</div>
+													))
+												) : searchQuery.length > 0 && !isSearching ? (
+													<div className="text-center py-8">
+														<p className="text-gray-500">No results found</p>
+													</div>
+												) : (
+													!isSearching && (
+														<div className="text-sm text-gray-500">
+															<p>Search for:</p>
+															<ul className="mt-2 space-y-1 list-disc list-inside opacity-75">
+																<li>Police Stations</li>
+																<li>Hospitals</li>
+																<li>ATMs & Banks</li>
+																<li>Officers</li>
+															</ul>
+														</div>
+													)
+												)}
 											</div>
 										</div>
 									</div>

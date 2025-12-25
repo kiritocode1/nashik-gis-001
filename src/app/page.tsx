@@ -38,7 +38,9 @@ import { getDutyOfficersLocations, type OfficerDutyLocation, type OfficersLocati
 export default function Home() {
 	// State for selected point and search
 	const [selectedPoint, setSelectedPoint] = useState<{ lat: number; lng: number; zoom?: number } | undefined>();
-	// const [searchQuery] = useState(""); // Currently unused
+	const [searchQuery, setSearchQuery] = useState("");
+	const [searchResults, setSearchResults] = useState<Array<{ id: string | number; title: string; subtitle?: string; type: string; position: { lat: number; lng: number } }>>([]);
+	const [isSearching, setIsSearching] = useState(false);
 	const [clickedPoint, setClickedPoint] = useState<{ lat: number; lng: number; title?: string; group?: string; meta?: Record<string, unknown> } | null>(null);
 	const [selectedRoute, setSelectedRoute] = useState<{
 		id: number;
@@ -144,6 +146,188 @@ export default function Home() {
 			setKmlAbsoluteUrl(`${window.location.origin}/kml/nashik_gramin.kml`);
 		}
 	}, []);
+
+	// Search implementation
+	const handleSearch = useCallback(
+		async (query: string) => {
+			setSearchQuery(query);
+
+			if (query.trim().length < 2) {
+				setSearchResults([]);
+				return;
+			}
+
+			setIsSearching(true);
+			// Simple plural handling: remove trailing 's' if present to match "stations" -> "station"
+			const normalizedQuery = query.toLowerCase().trim();
+			const searchTerms = [normalizedQuery];
+			if (normalizedQuery.endsWith("s")) {
+				searchTerms.push(normalizedQuery.slice(0, -1));
+			}
+
+			// Helper to check if any field matches any search term
+			const matches = (fields: (string | null | undefined)[]) => {
+				return searchTerms.some((term) =>
+					fields.some((field) => String(field || "").toLowerCase().includes(term))
+				);
+			};
+
+			try {
+				let mapDataPoints: MapDataPoint[] = [];
+				let hospitalsList: Hospital[] = [];
+				let atmsList: ATMLocation[] = [];
+				let banksList: BankLocation[] = [];
+
+				// Parallel fetch / retrieval
+				// Use Promise.allSettled or just catch individual promises to prevent one failure from stopping all
+				const [mapDataRes, hospitalsRes, atmsRes, banksRes] = await Promise.all([
+					// Always fetch full map data to ensure we search everything
+					fetchMapData().catch(() => ({ success: false, data_points: [] })),
+					hospitalLocations.length > 0 ? Promise.resolve(hospitalLocations) : fetchHospitals().catch(() => []),
+					atmLocations.length > 0 ? Promise.resolve(atmLocations) : fetchATMLocations().catch(() => []),
+					bankLocations.length > 0 ? Promise.resolve(bankLocations) : fetchBankLocations().catch(() => []),
+				]);
+
+				mapDataPoints = mapDataRes.data_points || [];
+				hospitalsList = hospitalsRes as Hospital[];
+				atmsList = atmsRes as ATMLocation[];
+				banksList = banksRes as BankLocation[];
+
+				// Update states if they were empty - just for the specific layers we know
+				if (policeLocations.length === 0) {
+					const police = mapDataPoints.filter((item) => item.category_name === "पोलीस आस्थापना");
+					if (police.length > 0) setPoliceLocations(police);
+				}
+				if (hospitalLocations.length === 0 && hospitalsList.length > 0) setHospitalLocations(hospitalsList);
+				if (atmLocations.length === 0 && atmsList.length > 0) setAtmLocations(atmsList);
+				if (bankLocations.length === 0 && banksList.length > 0) setBankLocations(banksList);
+
+				const results: Array<{ id: string | number; title: string; subtitle?: string; type: string; position: { lat: number; lng: number } }> = [];
+
+				// 1. Search Officers
+				officerList.forEach((officer) => {
+					if (matches([officer.name, officer.sevrathId, officer.rank, "Officer", "Police"])) {
+						results.push({
+							id: officer.officerId,
+							title: officer.name,
+							subtitle: `${officer.rank} (${officer.sevrathId})`,
+							type: "Officer",
+							position: { lat: officer.location.latitude, lng: officer.location.longitude },
+						});
+					}
+				});
+
+				// 2. Search Map Data Points (includes Police Stations and others)
+				mapDataPoints.forEach((p) => {
+					// Map category names to English for better searchability
+					let englishType = "Location";
+					const lowerName = String(p.name || "").toLowerCase();
+					const lowerCat = String(p.category_name || "").toLowerCase();
+
+					// Intelligent type detection based on name overrides category
+					if (lowerName.includes("atm")) {
+						englishType = "ATM";
+					} else if (lowerName.includes("bank") && !lowerName.includes("embankment")) {
+						englishType = "Bank";
+					} else if (lowerName.includes("hospital") || lowerName.includes("clinic") || lowerName.includes("medical")) {
+						englishType = "Hospital";
+					} else if (p.category_name === "पोलीस आस्थापना" || lowerCat.includes("police")) {
+						englishType = "Police Station";
+					} else {
+						englishType = p.category_name || "Location"; // Fallback
+					}
+
+					// Prepare fields to search against
+					const searchFields = [
+						p.name,
+						p.address,
+						p.description,
+						p.category_name,
+						englishType,
+						// Add explicit keywords for matching
+						englishType === "Police Station" ? "Police" : null
+					];
+
+					if (matches(searchFields)) {
+						const lat = typeof p.latitude === "string" ? parseFloat(p.latitude) : p.latitude;
+						const lng = typeof p.longitude === "string" ? parseFloat(p.longitude) : p.longitude;
+
+						// Avoid duplicates if multiple datasets return same points (unlikely here but good practice)
+						results.push({
+							id: `map-${p.id}`,
+							title: p.name,
+							subtitle: p.address,
+							type: englishType,
+							position: { lat, lng },
+						});
+					}
+				});
+
+				// 3. Search Hospitals
+				hospitalsList.forEach((h) => {
+					if (matches([h.hospital_name, h.name, h.type, h.specialties, "Hospital", "Medical"])) {
+						const lat = typeof h.latitude === "string" ? parseFloat(h.latitude) : h.latitude;
+						const lng = typeof h.longitude === "string" ? parseFloat(h.longitude) : h.longitude;
+						results.push({
+							id: `hosp-${h.id}`,
+							title: h.hospital_name || h.name,
+							subtitle: h.type,
+							type: "Hospital",
+							position: { lat, lng },
+						});
+					}
+				});
+
+				// 4. Search Banks
+				banksList.forEach((b) => {
+					if (matches([b.bank_name, b.branch_name, b.address, "Bank"])) {
+						const lat = typeof b.latitude === "string" ? parseFloat(b.latitude) : b.latitude;
+						const lng = typeof b.longitude === "string" ? parseFloat(b.longitude) : b.longitude;
+						results.push({
+							id: `bank-${b.id}`,
+							title: `${b.bank_name} - ${b.branch_name}`,
+							type: "Bank",
+							position: { lat, lng },
+						});
+					}
+				});
+
+				// 5. Search ATMs
+				atmsList.forEach((a) => {
+					if (matches([a.bank_name, a.address, "ATM"])) {
+						const lat = typeof a.latitude === "string" ? parseFloat(a.latitude) : a.latitude;
+						const lng = typeof a.longitude === "string" ? parseFloat(a.longitude) : a.longitude;
+						results.push({
+							id: `atm-${a.id}`,
+							title: `${a.bank_name} ATM`,
+							subtitle: a.address,
+							type: "ATM",
+							position: { lat, lng },
+						});
+					}
+				});
+
+				// Final deduplication by ID just in case
+				const uniqueResults = Array.from(new Map(results.map(item => [item.id, item])).values());
+				setSearchResults(uniqueResults.slice(0, 50));
+			} catch (error) {
+				console.error("Search failed:", error);
+			} finally {
+				setIsSearching(false);
+			}
+		},
+		[policeLocations, hospitalLocations, atmLocations, bankLocations, officerList],
+	);
+
+	const handleSearchResultClick = (result: { position: { lat: number; lng: number }; title: string; type: string }) => {
+		setSelectedPoint({ ...result.position, zoom: 18 });
+		setClickedPoint({
+			lat: result.position.lat,
+			lng: result.position.lng,
+			title: result.title,
+			group: result.type,
+		});
+	};
 
 	// Helpers
 	const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -712,12 +896,22 @@ export default function Home() {
 				markers:
 					officerPanelActive && !officerLoading && officerList.length > 0
 						? officerList.map((officer) => ({
-								position: { lat: officer.location.latitude, lng: officer.location.longitude },
-								title: officer.name,
-								label: "👮",
-								meta: { officerId: officer.officerId },
-						  }))
+							position: { lat: officer.location.latitude, lng: officer.location.longitude },
+							title: officer.name,
+							label: "👮",
+							meta: { officerId: officer.officerId },
+						}))
 						: [],
+			},
+			{
+				name: "Search Selection",
+				color: "#FFFF00", // Yellow highlight
+				visible: true,
+				markers: clickedPoint ? [{
+					position: { lat: clickedPoint.lat, lng: clickedPoint.lng },
+					title: clickedPoint.title || "Selected Location",
+					label: "📍"
+				}] : []
 			},
 			{
 				name: "Dial 112 Calls",
@@ -1183,9 +1377,8 @@ export default function Home() {
 									}
 								}}
 								disabled={!officerPanelActive}
-								className={`w-full rounded-2xl border p-3 text-left transition ${
-									isActive ? "border-emerald-400/60 bg-emerald-500/10" : "border-white/5 bg-black/20 hover:border-white/20"
-								}`}
+								className={`w-full rounded-2xl border p-3 text-left transition ${isActive ? "border-emerald-400/60 bg-emerald-500/10" : "border-white/5 bg-black/20 hover:border-white/20"
+									}`}
 							>
 								<div className="flex items-start justify-between">
 									<div>
@@ -1491,6 +1684,10 @@ export default function Home() {
 						fetchDutyOfficersRef.current();
 					}
 				}}
+				onSearch={handleSearch}
+				searchResults={searchResults}
+				onSearchResultClick={handleSearchResultClick}
+				isSearching={isSearching}
 				officerTrackingContent={officerTrackingContent}
 				settingsContent={
 					<div className="space-y-3">
@@ -1548,16 +1745,15 @@ export default function Home() {
 													></div>
 													<span className="text-sm font-medium text-gray-200 truncate">{category.name}</span>
 													<span
-														className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-															categoryToggles[category.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-														}`}
+														className={`px-2 py-0.5 text-xs rounded-full transition-colors ${categoryToggles[category.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+															}`}
 														style={
 															categoryToggles[category.id]
 																? {
-																		background: `${category.color}20`,
-																		color: category.color,
-																		borderColor: `${category.color}30`,
-																  }
+																	background: `${category.color}20`,
+																	color: category.color,
+																	borderColor: `${category.color}30`,
+																}
 																: undefined
 														}
 													>
@@ -1595,16 +1791,15 @@ export default function Home() {
 																	<div className="flex items-center space-x-2">
 																		<span className="text-xs font-medium text-gray-300 truncate max-w-[120px]">{subcategory.name}</span>
 																		<span
-																			className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-																				subcategoryToggles[category.id]?.[subcategory.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-																			}`}
+																			className={`px-2 py-0.5 text-xs rounded-full transition-colors ${subcategoryToggles[category.id]?.[subcategory.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+																				}`}
 																			style={
 																				subcategoryToggles[category.id]?.[subcategory.id]
 																					? {
-																							background: `${category.color}20`,
-																							color: category.color,
-																							borderColor: `${category.color}30`,
-																					  }
+																						background: `${category.color}20`,
+																						color: category.color,
+																						borderColor: `${category.color}30`,
+																					}
 																					: undefined
 																			}
 																		>
@@ -1647,19 +1842,18 @@ export default function Home() {
 										<div className="flex items-center space-x-2">
 											<span className="text-sm font-medium text-gray-200">ALL</span>
 											<span
-												className={`px-2 py-0.5 text-xs rounded-full transition-colors shrink-0 ${
-													Object.values(processionsVisible).every((visible) => visible)
-														? "bg-green-500/20 text-green-400 border border-green-500/30"
-														: Object.values(processionsVisible).some((visible) => visible)
+												className={`px-2 py-0.5 text-xs rounded-full transition-colors shrink-0 ${Object.values(processionsVisible).every((visible) => visible)
+													? "bg-green-500/20 text-green-400 border border-green-500/30"
+													: Object.values(processionsVisible).some((visible) => visible)
 														? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
 														: "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-												}`}
+													}`}
 											>
 												{Object.values(processionsVisible).every((visible) => visible)
 													? "ALL ON"
 													: Object.values(processionsVisible).some((visible) => visible)
-													? "SOME ON"
-													: "ALL OFF"}
+														? "SOME ON"
+														: "ALL OFF"}
 											</span>
 										</div>
 										<p className="text-xs text-gray-400 mt-0.5">Toggle all {processedProcessionRoutes.length} festivals</p>
@@ -1692,11 +1886,10 @@ export default function Home() {
 													{festivalGroup.festivalName.length > 14 ? `${festivalGroup.festivalName.substring(0, 14)}...` : festivalGroup.festivalName}
 												</span>
 												<span
-													className={`px-2 py-0.5 text-xs rounded-full transition-colors shrink-0 ${
-														processionsVisible[festivalGroup.festivalName]
-															? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-															: "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-													}`}
+													className={`px-2 py-0.5 text-xs rounded-full transition-colors shrink-0 ${processionsVisible[festivalGroup.festivalName]
+														? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+														: "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+														}`}
 												>
 													{processionsVisible[festivalGroup.festivalName] ? "ON" : "OFF"}
 												</span>
@@ -1794,9 +1987,8 @@ export default function Home() {
 									<div className="flex items-center space-x-2">
 										<span className="text-sm font-medium text-gray-200">🗺️ KML Boundaries</span>
 										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												kmlLayerVisible ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
+											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${kmlLayerVisible ? "bg-green-500/20 text-green-400 border border-green-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+												}`}
 										>
 											{kmlLayerVisible ? "ON" : "OFF"}
 										</span>
@@ -1816,9 +2008,8 @@ export default function Home() {
 									<div className="flex items-center space-x-2">
 										<span className="text-sm font-medium text-gray-200">🗺️ GeoJSON Layer</span>
 										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												geoJsonLayerVisible ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
+											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${geoJsonLayerVisible ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+												}`}
 										>
 											{geoJsonLayerVisible ? "ON" : "OFF"}
 										</span>
@@ -1838,9 +2029,8 @@ export default function Home() {
 									<div className="flex items-center space-x-2">
 										<span className="text-sm font-medium text-gray-200">🚨 Dial 112 Points</span>
 										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												dial112Visible ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
+											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${dial112Visible ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+												}`}
 										>
 											{dial112Visible ? "ON" : "OFF"}
 										</span>
@@ -1861,9 +2051,8 @@ export default function Home() {
 									<div className="flex items-center space-x-2">
 										<span className="text-sm font-medium text-gray-200">🔥 Dial 112 Heatmap</span>
 										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												dial112HeatmapVisible ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
+											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${dial112HeatmapVisible ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+												}`}
 										>
 											{dial112HeatmapVisible ? "ON" : "OFF"}
 										</span>
@@ -1883,9 +2072,8 @@ export default function Home() {
 									<div className="flex items-center space-x-2">
 										<span className="text-sm font-medium text-gray-200">🚗 Accident Points</span>
 										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												accidentVisible ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
+											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${accidentVisible ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+												}`}
 										>
 											{accidentVisible ? "ON" : "OFF"}
 										</span>
@@ -1906,9 +2094,8 @@ export default function Home() {
 									<div className="flex items-center space-x-2">
 										<span className="text-sm font-medium text-gray-200">🔥 Accident Heatmap</span>
 										<span
-											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-												accidentHeatmapVisible ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-											}`}
+											className={`px-2 py-0.5 text-xs rounded-full transition-colors ${accidentHeatmapVisible ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+												}`}
 										>
 											{accidentHeatmapVisible ? "ON" : "OFF"}
 										</span>
@@ -1979,16 +2166,15 @@ export default function Home() {
 														></div>
 														<span className="text-sm font-medium text-gray-200 truncate">{category.name}</span>
 														<span
-															className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-																categoryToggles[category.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-															}`}
+															className={`px-2 py-0.5 text-xs rounded-full transition-colors ${categoryToggles[category.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+																}`}
 															style={
 																categoryToggles[category.id]
 																	? {
-																			background: `${category.color}20`,
-																			color: category.color,
-																			borderColor: `${category.color}30`,
-																	  }
+																		background: `${category.color}20`,
+																		color: category.color,
+																		borderColor: `${category.color}30`,
+																	}
 																	: undefined
 															}
 														>
@@ -2026,18 +2212,17 @@ export default function Home() {
 																		<div className="flex items-center space-x-2">
 																			<span className="text-xs font-medium text-gray-300 truncate max-w-[120px]">{subcategory.name}</span>
 																			<span
-																				className={`px-2 py-0.5 text-xs rounded-full transition-colors ${
-																					subcategoryToggles[category.id]?.[subcategory.id]
-																						? `border`
-																						: "bg-gray-700/50 text-gray-500 border border-gray-600/30"
-																				}`}
+																				className={`px-2 py-0.5 text-xs rounded-full transition-colors ${subcategoryToggles[category.id]?.[subcategory.id]
+																					? `border`
+																					: "bg-gray-700/50 text-gray-500 border border-gray-600/30"
+																					}`}
 																				style={
 																					subcategoryToggles[category.id]?.[subcategory.id]
 																						? {
-																								background: `${category.color}20`,
-																								color: category.color,
-																								borderColor: `${category.color}30`,
-																						  }
+																							background: `${category.color}20`,
+																							color: category.color,
+																							borderColor: `${category.color}30`,
+																						}
 																						: undefined
 																				}
 																			>
@@ -2123,16 +2308,16 @@ export default function Home() {
 						gradient: dial112HeatmapVisible
 							? dial112HeatmapData.gradient
 							: accidentHeatmapVisible
-							? accidentHeatmapData.gradient
-							: atmHeatmapVisible
-							? atmHeatmapData.gradient
-							: bankHeatmapVisible
-							? bankHeatmapData.gradient
-							: hospitalHeatmapVisible
-							? hospitalHeatmapData.gradient
-							: policeHeatmapVisible
-							? policeHeatmapData.gradient
-							: dial112HeatmapData.gradient,
+								? accidentHeatmapData.gradient
+								: atmHeatmapVisible
+									? atmHeatmapData.gradient
+									: bankHeatmapVisible
+										? bankHeatmapData.gradient
+										: hospitalHeatmapVisible
+											? hospitalHeatmapData.gradient
+											: policeHeatmapVisible
+												? policeHeatmapData.gradient
+												: dial112HeatmapData.gradient,
 					}}
 					kmlLayer={kmlLayerConfig}
 					geoJsonLayer={geoJsonLayerConfig}
