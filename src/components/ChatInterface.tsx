@@ -52,8 +52,39 @@ export default function ChatInterface() {
 			{/* Messages Area */}
 			<div className="flex-1 overflow-y-auto p-4 space-y-4">
 				{messages.length === 0 ? (
-					<div className="flex flex-col items-center justify-center h-full text-center opacity-50">
-						<p className="text-sm text-slate-300">Ask about Nashik city data...</p>
+					<div className="flex flex-col items-center justify-center h-full px-6 text-center space-y-6 animate-in fade-in duration-500">
+						<div className="p-4 bg-white/5 rounded-full border border-white/10 mb-2 shadow-2xl shadow-blue-500/10">
+							<div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cyan-400 to-blue-600 animate-pulse" />
+						</div>
+						<div className="space-y-2 max-w-xs mx-auto">
+							<h3 className="text-lg font-medium text-white">How can I help you today?</h3>
+							<p className="text-sm text-slate-400">
+								I can analyze crime trends, locate emergency services, and provide city infrastructure insights.
+							</p>
+						</div>
+
+						<div className="grid gap-2 w-full max-w-sm">
+							{[
+								"Show me high crime areas in Nashik",
+								"Where are the nearest hospitals?",
+								"List recent emergency calls details",
+								"Identify police stations near Gangapur"
+							].map((suggestion, i) => (
+								<button
+									key={i}
+									onClick={() => {
+										// Programmatically set input and submit styling visually, 
+										// but properly we'd want to call sendMessage directly or set input
+										sendMessage({ text: suggestion });
+									}}
+									className="group text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-blue-500/30 transition-all duration-200"
+								>
+									<p className="text-sm text-slate-300 group-hover:text-blue-200 transition-colors">
+										{suggestion}
+									</p>
+								</button>
+							))}
+						</div>
 					</div>
 				) : (
 					messages.map((msg) => (

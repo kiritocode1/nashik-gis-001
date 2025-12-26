@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { SliderV1 } from "./NewToggle";
 import ChatInterface from "./ChatInterface";
 
@@ -288,72 +289,85 @@ export default function Sidebar({
 	};
 
 	return (
-		<div className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-50 flex pointer-events-none">
+		<div className="fixed left-0 top-16 h-[calc(100vh-4rem)] z-[40] flex pointer-events-none font-sans">
 			{/* Sidebar Container */}
-			<div className="relative flex pointer-events-auto">
+			<div className="relative flex pointer-events-auto shadow-2xl shadow-black/50">
 				{/* Icon Bar */}
-				<div className="w-16 bg-black/90 backdrop-blur-sm border-r border-gray-900/50 flex flex-col items-center py-4 space-y-2 shadow-xl">
-					{/* Logo */}
-					<div className="mb-6 p-2 rounded-lg bg-gray-900/30 border border-gray-800/40">
-						<MapIcon className="w-6 h-6 text-gray-200" />
+				<div className="w-16 bg-slate-950/90 backdrop-blur-md border-r border-white/5 flex flex-col items-center py-4 space-y-4 z-20">
+					{/* Logo Area */}
+					<div className="mb-2 p-2.5 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 shadow-[0_0_15px_rgba(37,99,235,0.2)]">
+						<MapIcon className="w-6 h-6" />
 					</div>
 
+					<div className="w-8 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
 					{/* Section Icons */}
-					{sidebarSections.map((section) => {
-						const IconComponent = section.icon;
-						const isActive = activeSection === section.id;
+					<div className="flex flex-col space-y-2 w-full px-2">
+						{sidebarSections.map((section) => {
+							const IconComponent = section.icon;
+							const isActive = activeSection === section.id;
 
-						return (
-							<button
-								key={section.id}
-								onClick={() => selectSection(section.id)}
-								className={`
-                  group relative w-10 h-10 rounded-lg flex items-center justify-center
-                  transition-all duration-200 ease-out
-                  ${isActive ? "bg-gray-900/40 border border-gray-800/60 text-gray-100" : "hover:bg-gray-900/30 text-gray-400 hover:text-gray-100"}
-                `}
-								title={section.title}
-							>
-								<IconComponent className="w-5 h-5" />
+							return (
+								<button
+									key={section.id}
+									onClick={() => selectSection(section.id)}
+									className={`
+										group relative w-full aspect-square rounded-xl flex items-center justify-center
+										transition-all duration-300 ease-out outline-none
+										${isActive
+											? "bg-blue-600 text-white shadow-lg shadow-blue-900/50 translate-x-1"
+											: "text-slate-400 hover:text-slate-100 hover:bg-white/5 hover:scale-105 active:scale-95"}
+									`}
+									title={section.title}
+								>
+									<IconComponent className={`w-5 h-5 transition-transform duration-300 ${isActive ? "scale-110" : "group-hover:scale-110"}`} />
 
-								{/* Tooltip */}
-								<div className="absolute left-full ml-3 px-2 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-									{section.title}
-								</div>
-							</button>
-						);
-					})}
+									{/* Tooltip */}
+									<div className="absolute left-full ml-4 px-3 py-1.5 bg-slate-900 text-slate-200 text-xs font-medium rounded-lg opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 pointer-events-none whitespace-nowrap z-50 border border-white/10 shadow-xl">
+										{section.title}
+										<div className="absolute top-1/2 left-0 w-1 h-1 -ml-0.5 bg-slate-900 -translate-y-1/2 rotate-45 border-l border-b border-white/10" />
+									</div>
+								</button>
+							);
+						})}
+					</div>
 				</div>
 
 				{/* Expandable Content Panel */}
 				<div
 					style={{ width: isOpen && activeSection ? `${sidebarWidth}px` : "0px" }}
 					className={`
-          bg-black/90 backdrop-blur-sm border-r border-gray-900/50 shadow-xl
-          transition-[width] duration-300 ease-out overflow-hidden flex relative
-          ${isResizing ? "transition-none select-none" : ""}
-        `}
+						bg-slate-950/95 backdrop-blur-xl border-r border-white/5 
+						transition-[width] duration-500 cubic-bezier(0.16, 1, 0.3, 1) overflow-hidden flex relative
+						${isResizing ? "transition-none select-none" : ""}
+					`}
 				>
 					{/* Resize Handle */}
 					{isOpen && activeSection && (
 						<div
-							className="absolute right-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-blue-500/50 active:bg-blue-500 transition-colors z-50"
+							className="absolute right-0 top-0 bottom-0 w-1 hover:w-1.5 group cursor-col-resize z-50 flex justify-center"
 							onMouseDown={startResizing}
-						/>
+						>
+							<div className="w-px h-full bg-white/5 group-hover:bg-blue-500/50 transition-colors" />
+						</div>
 					)}
 
 					{activeSection && (
-						<div className="h-full flex flex-col">
+						<div className="h-full flex flex-col min-w-[250px] w-full">
 							{/* Header */}
-							<div className="p-4 border-b border-gray-900/50">
+							<div className="px-5 py-4 border-b border-white/5 bg-white/[0.02]">
 								<div className="flex items-center justify-between">
-									<div>
-										<h2 className="text-lg font-semibold text-white">{sidebarSections.find((s) => s.id === activeSection)?.title}</h2>
-										<p className="text-sm text-gray-400 mt-1">{sidebarSections.find((s) => s.id === activeSection)?.description}</p>
+									<div className="space-y-0.5">
+										<h2 className="text-lg font-semibold text-slate-100 tracking-tight">
+											{sidebarSections.find((s) => s.id === activeSection)?.title}
+										</h2>
+										<p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+											{sidebarSections.find((s) => s.id === activeSection)?.description}
+										</p>
 									</div>
 									<button
 										onClick={() => setActiveSection(null)}
-										className="p-1 rounded-md hover:bg-gray-900/50 text-gray-400 hover:text-gray-100 transition-colors"
+										className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-slate-200 transition-colors"
 									>
 										<ChevronLeftIcon className="w-4 h-4" />
 									</button>
@@ -361,35 +375,38 @@ export default function Sidebar({
 							</div>
 
 							{/* Content */}
-							<div className="flex-1 overflow-hidden flex flex-col">
+							<div className="flex-1 overflow-hidden flex flex-col relative">
+								{/* Background Pattern */}
+								<div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(0,0,0,0.2))] pointer-events-none" />
+
 								{activeSection === "layers" && (
-									<div className="flex-1 overflow-y-auto p-4">
+									<div className="flex-1 overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
 										<div className="space-y-4">{children}</div>
 									</div>
 								)}
 
 								{activeSection === "officers" && (
-									<div className="flex-1 overflow-y-auto p-4">
+									<div className="flex-1 overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
 										<div className="space-y-4">{officerTrackingContent}</div>
 									</div>
 								)}
 
 								{activeSection === "search" && (
-									<div className="flex-1 overflow-y-auto p-4">
-										<div className="space-y-4">
-											<div className="sticky top-0 bg-black/50 backdrop-blur-md pb-4 z-10">
-												<div className="relative">
-													<SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+									<div className="flex-1 overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+										<div className="space-y-5">
+											<div className="sticky top-0 -mx-5 px-5 pb-4 bg-slate-950/95 backdrop-blur-xl z-10 border-b border-white/5">
+												<div className="relative group">
+													<SearchIcon className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-400 transition-colors" />
 													<input
 														type="text"
 														placeholder="Search locations..."
 														value={searchQuery}
 														onChange={handleSearchChange}
-														className="w-full pl-10 pr-10 py-2 bg-gray-900/50 border border-gray-800/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-600/50 focus:border-gray-600/50 transition-all"
+														className="w-full pl-10 pr-10 py-2.5 bg-slate-900/50 hover:bg-slate-900 border border-white/5 rounded-xl text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500/30 transition-all font-medium text-sm shadow-inner"
 													/>
 													{isSearching && (
-														<div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-															<div className="w-4 h-4 border-2 border-primary/50 border-t-primary rounded-full animate-spin" />
+														<div className="absolute right-3.5 top-1/2 transform -translate-y-1/2">
+															<Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
 														</div>
 													)}
 												</div>
@@ -401,35 +418,38 @@ export default function Sidebar({
 														<button
 															key={`${result.type}-${result.id}`}
 															onClick={() => onSearchResultClick?.(result)}
-															className="w-full text-left p-3 rounded-lg bg-gray-900/30 hover:bg-gray-800/50 border border-gray-800/30 hover:border-gray-700 transition-all group"
+															className="w-full text-left p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-blue-500/20 transition-all group relative overflow-hidden"
 														>
-															<div className="flex items-start justify-between">
+															<div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-blue-500/0 group-hover:from-blue-500/5 group-hover:to-transparent transition-all duration-500" />
+															<div className="flex items-start justify-between relative z-10">
 																<div>
-																	<h4 className="font-medium text-gray-200 group-hover:text-white transition-colors">
+																	<h4 className="font-medium text-slate-200 group-hover:text-blue-200 transition-colors text-sm">
 																		{result.title}
 																	</h4>
-																	{result.subtitle && <p className="text-xs text-gray-500 mt-0.5">{result.subtitle}</p>}
+																	{result.subtitle && <p className="text-xs text-slate-500 mt-1">{result.subtitle}</p>}
 																</div>
-																<span className="text-xs px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 border border-gray-700">
+																<span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-md bg-slate-900 text-slate-400 border border-white/5">
 																	{result.type}
 																</span>
 															</div>
 														</button>
 													))
 												) : searchQuery.length > 0 && !isSearching ? (
-													<div className="text-center py-8">
-														<p className="text-gray-500">No results found</p>
+													<div className="flex flex-col items-center justify-center py-10 opacity-50">
+														<SearchIcon className="w-8 h-8 text-slate-600 mb-2" />
+														<p className="text-sm text-slate-500 font-medium">No results found</p>
 													</div>
 												) : (
 													!isSearching && (
-														<div className="text-sm text-gray-500">
-															<p>Search for:</p>
-															<ul className="mt-2 space-y-1 list-disc list-inside opacity-75">
-																<li>Police Stations</li>
-																<li>Hospitals</li>
-																<li>ATMs & Banks</li>
-																<li>Officers</li>
-															</ul>
+														<div className="text-sm">
+															<p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Suggested Searches</p>
+															<div className="grid grid-cols-2 gap-2">
+																{["Police Stations", "Hospitals", "ATMs & Banks", "Officers"].map((item) => (
+																	<div key={item} className="p-3 rounded-lg border border-white/5 bg-white/[0.02] text-slate-400 hover:text-slate-200 hover:bg-white/5 hover:border-white/10 transition-all cursor-pointer text-xs font-medium text-center">
+																		{item}
+																	</div>
+																))}
+															</div>
 														</div>
 													)
 												)}
@@ -439,41 +459,43 @@ export default function Sidebar({
 								)}
 
 								{activeSection === "routes" && (
-									<div className="flex-1 overflow-y-auto p-4">
+									<div className="flex-1 overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
 										<div className="space-y-4">{processionRoutes}</div>
 									</div>
 								)}
 
 								{activeSection === "categories" && (
-									<div className="flex-1 overflow-y-auto p-4">
+									<div className="flex-1 overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
 										<div className="space-y-4">
 											{settingsContent || (
-												<div className="space-y-3">
-													<h3 className="text-sm font-medium text-gray-300">Preferences</h3>
-													<div className="space-y-4">
-														<div className="flex items-center justify-between">
-															<span className="text-sm text-gray-300">Auto-save map state</span>
-															<SliderV1
-																checked={autoSave}
-																onChange={setAutoSave}
-																id="auto-save"
-															/>
-														</div>
-														<div className="flex items-center justify-between">
-															<span className="text-sm text-gray-300">Show coordinates</span>
-															<SliderV1
-																checked={showCoordinates}
-																onChange={setShowCoordinates}
-																id="show-coordinates"
-															/>
-														</div>
-														<div className="flex items-center justify-between">
-															<span className="text-sm text-gray-300">Enable clustering</span>
-															<SliderV1
-																checked={enableClustering}
-																onChange={setEnableClustering}
-																id="enable-clustering"
-															/>
+												<div className="space-y-6">
+													<div>
+														<h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Map Preferences</h3>
+														<div className="space-y-4">
+															<div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5">
+																<span className="text-sm font-medium text-slate-300">Auto-save state</span>
+																<SliderV1
+																	checked={autoSave}
+																	onChange={setAutoSave}
+																	id="auto-save"
+																/>
+															</div>
+															<div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5">
+																<span className="text-sm font-medium text-slate-300">Show coordinates</span>
+																<SliderV1
+																	checked={showCoordinates}
+																	onChange={setShowCoordinates}
+																	id="show-coordinates"
+																/>
+															</div>
+															<div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5">
+																<span className="text-sm font-medium text-slate-300">Enable clustering</span>
+																<SliderV1
+																	checked={enableClustering}
+																	onChange={setEnableClustering}
+																	id="enable-clustering"
+																/>
+															</div>
 														</div>
 													</div>
 												</div>
@@ -483,7 +505,7 @@ export default function Sidebar({
 								)}
 
 								{activeSection === "chat" && (
-									<div className="flex-1 overflow-hidden">
+									<div className="flex-1 overflow-hidden h-full">
 										<ChatInterface />
 									</div>
 								)}
@@ -492,8 +514,6 @@ export default function Sidebar({
 					)}
 				</div>
 			</div>
-
-			{/* Add the GooeyFilter for the liquid toggle effects */}
 		</div>
 	);
 }
