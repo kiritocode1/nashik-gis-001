@@ -31,17 +31,17 @@ export default function ChatInterface() {
 	const [input, setInput] = useState("");
 
 	return (
-		<div className="flex flex-col h-full bg-slate-950/50">
+		<div className="flex flex-col h-full bg-black/50">
 			{/* Header */}
 			<div className="flex items-center justify-between p-3 border-b border-white/10">
 				<div className="flex items-center space-x-2">
 					<div className={`w-2 h-2 rounded-full ${isLoading ? "bg-amber-500 animate-pulse" : "bg-emerald-500"}`} />
-					<span className="text-sm font-medium text-slate-200">Nashik City AI</span>
+					<span className="text-sm font-medium text-gray-200">Nashik City AI</span>
 				</div>
 				{messages.length > 0 && (
 					<button
 						onClick={() => setMessages([])}
-						className="p-1.5 rounded-md hover:bg-white/5 text-slate-400 hover:text-slate-200 transition-colors"
+						className="p-1.5 rounded-md hover:bg-white/5 text-gray-400 hover:text-gray-200 transition-colors"
 						title="Clear chat"
 					>
 						<Trash2 className="w-4 h-4" />
@@ -58,7 +58,7 @@ export default function ChatInterface() {
 						</div>
 						<div className="space-y-2 max-w-xs mx-auto">
 							<h3 className="text-lg font-medium text-white">How can I help you today?</h3>
-							<p className="text-sm text-slate-400">
+							<p className="text-sm text-gray-400">
 								I can analyze crime trends, locate emergency services, and provide city infrastructure insights.
 							</p>
 						</div>
@@ -79,7 +79,7 @@ export default function ChatInterface() {
 									}}
 									className="group text-left px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-blue-500/30 transition-all duration-200"
 								>
-									<p className="text-sm text-slate-300 group-hover:text-blue-200 transition-colors">
+									<p className="text-sm text-gray-300 group-hover:text-blue-200 transition-colors">
 										{suggestion}
 									</p>
 								</button>
@@ -92,7 +92,7 @@ export default function ChatInterface() {
 							<div
 								className={`max-w-[85%] rounded-2xl px-4 py-3 ${msg.role === "user"
 									? "bg-blue-600/20 border border-blue-500/30 text-blue-100 rounded-br-none"
-									: "bg-white/5 border border-white/10 text-slate-200 rounded-bl-none"
+									: "bg-white/5 border border-white/10 text-gray-200 rounded-bl-none"
 									}`}
 							>
 								{/* Render Parts strictly from documentation pattern */}
