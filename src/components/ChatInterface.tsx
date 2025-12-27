@@ -13,6 +13,108 @@ export default function ChatInterface() {
 
 	const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
+	// 1. Define local input state
+	const [input, setInput] = useState("");
+
+	// Voice recognition state
+	const [isListening, setIsListening] = useState(false);
+	const [voiceError, setVoiceError] = useState<string | null>(null);
+	const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+	// Initialize Speech Recognition
+	useEffect(() => {
+		// Check for browser support
+		if (typeof window !== 'undefined') {
+			const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+			if (SpeechRecognition) {
+				const recognition = new SpeechRecognition();
+				recognition.continuous = false;
+				recognition.lang = "en-US";
+				recognition.interimResults = false;
+				recognition.maxAlternatives = 1;
+
+				recognition.onstart = () => {
+					setIsListening(true);
+					setVoiceError(null); // Clear any previous errors
+				};
+
+				recognition.onresult = (event: SpeechRecognitionEvent) => {
+					const transcript = event.results[0][0].transcript;
+					setInput(transcript);
+					setVoiceError(null);
+				};
+
+				recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+					console.error("Speech recognition error:", event.error);
+					setIsListening(false);
+
+					// Provide user-friendly error messages
+					let errorMessage = "";
+					switch (event.error) {
+						case 'network':
+							errorMessage = "Voice recognition requires an internet connection. Please check your network.";
+							break;
+						case 'no-speech':
+							errorMessage = "No speech detected. Please try again.";
+							break;
+						case 'not-allowed':
+						case 'service-not-allowed':
+							errorMessage = "Microphone access denied. Please allow microphone permissions.";
+							break;
+						case 'aborted':
+							errorMessage = "Voice recognition was cancelled.";
+							break;
+						case 'audio-capture':
+							errorMessage = "No microphone detected. Please check your audio device.";
+							break;
+						default:
+							errorMessage = `Voice recognition error: ${event.error}`;
+					}
+
+					setVoiceError(errorMessage);
+
+					// Auto-clear error after 5 seconds
+					setTimeout(() => setVoiceError(null), 5000);
+				};
+
+				recognition.onend = () => {
+					setIsListening(false);
+				};
+
+				recognitionRef.current = recognition;
+			}
+		}
+
+		return () => {
+			if (recognitionRef.current) {
+				recognitionRef.current.stop();
+			}
+		};
+	}, []);
+
+	// Voice recognition handlers
+	const startListening = () => {
+		if (recognitionRef.current && !isListening) {
+			recognitionRef.current.start();
+			console.log("Ready to receive voice input.");
+		}
+	};
+
+	const stopListening = () => {
+		if (recognitionRef.current && isListening) {
+			recognitionRef.current.stop();
+		}
+	};
+
+	const toggleVoiceInput = () => {
+		if (isListening) {
+			stopListening();
+		} else {
+			startListening();
+		}
+	};
+
 	// Scroll to bottom on new messages
 	useEffect(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -26,9 +128,6 @@ export default function ChatInterface() {
 		sendMessage({ text: input });
 		setInput("");
 	};
-
-	// 1. Define local input state
-	const [input, setInput] = useState("");
 
 	return (
 		<div className="flex flex-col h-full bg-black/50">
@@ -153,6 +252,18 @@ export default function ChatInterface() {
 
 			{/* Input */}
 			<div className="p-3 border-t border-white/10 bg-black/20">
+				{/* Voice Error Message */}
+				{voiceError && (
+					<div className="mb-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm animate-in slide-in-from-bottom duration-300">
+						<div className="flex items-start gap-2">
+							<svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+								<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+							</svg>
+							<span>{voiceError}</span>
+						</div>
+					</div>
+				)}
+
 				<form onSubmit={onFormSubmit} className="flex gap-2">
 					<input
 						className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-blue-500/50 transition-colors"
@@ -161,6 +272,21 @@ export default function ChatInterface() {
 						placeholder="Ask about crime, hospitals, or emergency services..."
 						disabled={isLoading}
 					/>
+
+					{/* Voice Input Button */}
+					<button
+						type="button"
+						onClick={toggleVoiceInput}
+						disabled={isLoading || !recognitionRef.current}
+						className={`p-2.5 rounded-xl transition-all duration-200 ${isListening
+							? "bg-red-500/20 hover:bg-red-500/30 text-red-500 border border-red-500/50 animate-pulse"
+							: "bg-white/5 hover:bg-white/10 text-gray-400 hover:text-gray-200 border border-white/10"
+							} disabled:opacity-50 disabled:cursor-not-allowed`}
+						title={isListening ? "Stop listening" : "Start voice input"}
+					>
+						{isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+					</button>
+
 					{isLoading ? (
 						<button
 							type="button"
