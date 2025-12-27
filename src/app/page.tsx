@@ -202,7 +202,7 @@ export default function Home() {
 			// Detect if user is searching for location types within specific areas
 			let areaSearchMode = false;
 			let targetBoundary: KMLFeature | null = null;
-			let dataType: 'police' | 'hospital' | 'bank' | 'atm' | 'cctv' | 'accident' | 'dial112' | 'all' | null = null;
+			let dataType: 'police' | 'hospital' | 'bank' | 'atm' | 'cctv' | 'accident' | 'dial112' | 'crime' | 'all' | null = null;
 
 			// Parse natural language queries like:
 			// - "police stations in vani"
@@ -217,6 +217,7 @@ export default function Home() {
 				/(?:cctv|cameras?)\s+(?:in|at|near)\s+(.+)/i,
 				/(?:accidents?)\s+(?:in|at|near)\s+(.+)/i,
 				/(?:dial\s*112|emergency)\s+(?:in|at|near)\s+(.+)/i,
+				/(?:crimes?|fir)\s+(?:in|at|near)\s+(.+)/i,
 			];
 
 			for (const pattern of areaPatterns) {
@@ -240,6 +241,8 @@ export default function Home() {
 						dataType = 'accident';
 					} else if (normalizedQuery.includes('dial') || normalizedQuery.includes('112') || normalizedQuery.includes('emergency')) {
 						dataType = 'dial112';
+					} else if (normalizedQuery.includes('crime') || normalizedQuery.includes('fir')) {
+						dataType = 'crime';
 					}
 
 					console.log(`🔍 Area search: "${areaName}", type: ${dataType}`);
@@ -267,6 +270,7 @@ export default function Home() {
 
 			try {
 				let mapDataPoints: MapDataPoint[] = [];
+				let crimeDataPoints: any[] = [];
 				let hospitalsList: Hospital[] = [];
 				let atmsList: ATMLocation[] = [];
 				let banksList: BankLocation[] = [];
@@ -275,13 +279,14 @@ export default function Home() {
 				// Use Promise.allSettled or just catch individual promises to prevent one failure from stopping all
 				const [mapDataRes, hospitalsRes, atmsRes, banksRes] = await Promise.all([
 					// Always fetch full map data to ensure we search everything
-					fetchMapData().catch(() => ({ success: false, data_points: [] })),
+					fetchMapData().catch(() => ({ success: false, data_points: [], crime_data: [] })),
 					hospitalLocations.length > 0 ? Promise.resolve(hospitalLocations) : fetchHospitals().catch(() => []),
 					atmLocations.length > 0 ? Promise.resolve(atmLocations) : fetchATMLocations().catch(() => []),
 					bankLocations.length > 0 ? Promise.resolve(bankLocations) : fetchBankLocations().catch(() => []),
 				]);
 
 				mapDataPoints = mapDataRes.data_points || [];
+				crimeDataPoints = mapDataRes.crime_data || [];
 				hospitalsList = hospitalsRes as Hospital[];
 				atmsList = atmsRes as ATMLocation[];
 				banksList = banksRes as BankLocation[];
@@ -317,7 +322,7 @@ export default function Home() {
 									lng: typeof i.longitude === 'string' ? parseFloat(i.longitude as string) : i.longitude as number,
 								};
 							}),
-							targetBoundary
+							targetBoundary!
 						);
 
 						filtered.forEach((item: Record<string, unknown>) => {
@@ -464,6 +469,27 @@ export default function Home() {
 							(item: unknown) => (item as CCTVLocation).location_name
 						);
 						console.log(`🎥 Found ${count} CCTV cameras in ${targetBoundary.name}`);
+					} else if (dataType === 'crime') {
+						// 1. From dedicated Crime Data (if available logic exists)
+						// Ensure we have 'crime_data' from mapDataResponse
+
+						let count = addFilteredResults(
+							crimeDataPoints,
+							"Crime",
+							(item: unknown) => (item as any).crime_head || "Crime Incident",
+							(item: unknown) => (item as any).police_station || "Reported"
+						);
+
+						// 2. From Map Data (with crime_number not null)
+						const crimePoints = mapDataPoints.filter(p => !!p.crime_number);
+						count += addFilteredResults(
+							crimePoints,
+							"Crime",
+							(item: unknown) => (item as MapDataPoint).name || "Crime Location",
+							(item: unknown) => (item as MapDataPoint).crime_number || "Reference ID"
+						);
+
+						console.log(`⚠️ Found ${count} crimes in ${targetBoundary.name}`);
 					}
 
 					// Add summary result
@@ -585,6 +611,91 @@ export default function Home() {
 							title: `${a.bank_name} ATM`,
 							subtitle: a.address,
 							type: "ATM",
+							position: { lat, lng },
+						});
+					}
+				});
+
+				// 6. Search Accidents
+				let accidents = accidentAllRecords;
+				if (accidents.length === 0 && (normalizedQuery.includes("accident") || normalizedQuery.includes("district"))) {
+					try {
+						const fetchedAccidents = await fetchAccidentRecords();
+						accidents = fetchedAccidents;
+						setAccidentAllRecords(fetchedAccidents);
+					} catch (error) {
+						console.error("Failed to fetch accidents (search):", error);
+					}
+				}
+
+				accidents.forEach((a) => {
+					if (matches([String(a.accidentCount), a.district, a.gridId, "Accident"])) {
+						results.push({
+							id: `acc-${a.gridId}-${Math.random()}`,
+							title: `Accident Spot (${a.accidentCount} incidents)`,
+							subtitle: `${a.district} (Grid: ${a.gridId})`,
+							type: "Accident",
+							position: { lat: a.latitude, lng: a.longitude },
+						});
+					}
+				});
+
+				// 7. Search Dial 112
+				let dial112 = dial112AllCalls;
+				if (dial112.length === 0 && (normalizedQuery.includes("112") || normalizedQuery.includes("dial") || normalizedQuery.includes("emergency"))) {
+					try {
+						const fetchedCalls = await fetchDial112Calls();
+						dial112 = fetchedCalls;
+						setDial112AllCalls(fetchedCalls);
+					} catch (error) {
+						console.error("Failed to fetch dial 112 (search):", error);
+					}
+				}
+
+				dial112.forEach((call) => {
+					if (matches([call.callType, call.policeStation, "Dial 112", "Emergency"])) {
+						results.push({
+							id: `dial112-${call.id}`,
+							title: `Emergency Call: ${call.callType}`,
+							subtitle: call.policeStation,
+							type: "Dial 112",
+							position: { lat: call.latitude, lng: call.longitude }, // Ensure these field names match your API response
+						});
+					}
+				});
+
+				// 8. Search Crimes
+				// Search dedicated crime data
+				crimeDataPoints.forEach((c: any) => {
+					// Adapt fields based on actual API response structure
+					const title = c.crime_head || c.title || "Crime Incident";
+					const sub = c.police_station || c.description || "Reported Crime";
+					if (matches([title, sub, c.crime_number, "Crime", "FIR"])) {
+						const lat = typeof c.latitude === "string" ? parseFloat(c.latitude) : c.latitude;
+						const lng = typeof c.longitude === "string" ? parseFloat(c.longitude) : c.longitude;
+
+						if (lat && lng) {
+							results.push({
+								id: `crime-${c.id || Math.random()}`,
+								title: title,
+								subtitle: sub,
+								type: "Crime",
+								position: { lat, lng },
+							});
+						}
+					}
+				});
+
+				// Search map data points that are flagged as crimes
+				mapDataPoints.forEach((p) => {
+					if (p.crime_number && matches([p.name, p.crime_number, "Crime", "FIR"])) {
+						const lat = typeof p.latitude === "string" ? parseFloat(p.latitude) : p.latitude;
+						const lng = typeof p.longitude === "string" ? parseFloat(p.longitude) : p.longitude;
+						results.push({
+							id: `crime-map-${p.id}`,
+							title: p.name || `Crime #${p.crime_number}`,
+							subtitle: `Ref: ${p.crime_number}`,
+							type: "Crime",
 							position: { lat, lng },
 						});
 					}
