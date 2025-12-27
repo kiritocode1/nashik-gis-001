@@ -53,7 +53,7 @@ export default function StreetViewPopup({ point, onClose }: StreetViewPopupProps
 								const heading = computeHeading({ lat: panoLatLng.lat(), lng: panoLatLng.lng() }, { lat: point.lat, lng: point.lng });
 								panorama.setPov({ heading, pitch: 0 });
 							}
-						} catch {}
+						} catch { }
 						setHasPano(true);
 					} else {
 						setHasPano(false);
@@ -95,8 +95,24 @@ export default function StreetViewPopup({ point, onClose }: StreetViewPopupProps
 			className="relative w-[360px] md:w-[420px] shadow-2xl rounded-xl overflow-hidden border border-white/10 bg-[#0b1220]/90 backdrop-blur supports-[backdrop-filter]:bg-[#0b1220]/70"
 		>
 			<div className="flex items-center justify-between px-3 py-2 border-b border-white/10">
-				<div className="min-w-0">
-					<div className="text-xs text-gray-400 truncate">{point.group || "Location"}</div>
+				<div className="min-w-0 flex flex-col gap-1">
+					{point.group && (
+						<span
+							className={`self-start px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded border ${(() => {
+								const g = point.group.toLowerCase();
+								if (g.includes("112") || g.includes("emergency")) return "bg-purple-500/20 text-purple-300 border-purple-500/30";
+								if (g.includes("accident")) return "bg-red-500/20 text-red-300 border-red-500/30";
+								if (g.includes("crime") || g.includes("fir")) return "bg-orange-500/20 text-orange-300 border-orange-500/30";
+								if (g.includes("police")) return "bg-blue-500/20 text-blue-300 border-blue-500/30";
+								if (g.includes("hospital") || g.includes("medical")) return "bg-emerald-500/20 text-emerald-300 border-emerald-500/30";
+								if (g.includes("bank") || g.includes("atm")) return "bg-yellow-500/20 text-yellow-300 border-yellow-500/30";
+								if (g.includes("cctv")) return "bg-cyan-500/20 text-cyan-300 border-cyan-500/30";
+								return "bg-gray-700/50 text-gray-400 border-gray-600/30";
+							})()}`}
+						>
+							{point.group}
+						</span>
+					)}
 					<div className="text-sm font-semibold text-gray-100 truncate">{point.title || `${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}`}</div>
 				</div>
 				<button

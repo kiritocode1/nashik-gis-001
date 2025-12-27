@@ -667,18 +667,19 @@ export default function Home() {
 				// 8. Search Crimes
 				// Search dedicated crime data
 				crimeDataPoints.forEach((c: any) => {
-					// Adapt fields based on actual API response structure
+					// Format should match user request: Show ID/Number prominently
+					const crimeId = c.crime_number || c.fir_no || c.id;
 					const title = c.crime_head || c.title || "Crime Incident";
-					const sub = c.police_station || c.description || "Reported Crime";
-					if (matches([title, sub, c.crime_number, "Crime", "FIR"])) {
+
+					if (matches([title, c.police_station, crimeId, "Crime", "FIR"])) {
 						const lat = typeof c.latitude === "string" ? parseFloat(c.latitude) : c.latitude;
 						const lng = typeof c.longitude === "string" ? parseFloat(c.longitude) : c.longitude;
 
 						if (lat && lng) {
 							results.push({
 								id: `crime-${c.id || Math.random()}`,
-								title: title,
-								subtitle: sub,
+								title: `Crime #${crimeId} - ${title}`,
+								subtitle: c.police_station || "Reported Location",
 								type: "Crime",
 								position: { lat, lng },
 							});
@@ -693,8 +694,8 @@ export default function Home() {
 						const lng = typeof p.longitude === "string" ? parseFloat(p.longitude) : p.longitude;
 						results.push({
 							id: `crime-map-${p.id}`,
-							title: p.name || `Crime #${p.crime_number}`,
-							subtitle: `Ref: ${p.crime_number}`,
+							title: `Crime #${p.crime_number}`,
+							subtitle: p.name || p.address || "Crime Spot",
 							type: "Crime",
 							position: { lat, lng },
 						});
