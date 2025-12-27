@@ -5,6 +5,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@
 import Sidebar from "@/components/Sidebar";
 import { SliderV1 } from "@/components/NewToggle";
 import { parseKMLFile, type KMLFeature, type KMLMarker } from "@/utils/kmlParser";
+import { isPointNearPath, isPointInPolygon, findContainingBoundary, filterPointsInBoundary, calculateDistance } from "@/utils/geoUtils";
 import { AnimatePresence } from "framer-motion";
 import StreetViewPopup from "@/components/StreetViewPopup";
 import OfficerPopup from "@/components/OfficerPopup";
@@ -36,6 +37,371 @@ import {
 	type PoliceStation,
 } from "@/services/externalApi";
 import { getDutyOfficersLocations, type OfficerDutyLocation, type OfficersLocationsResponse } from "@/services/smartBandobastApis";
+
+// Emergency Tab Component
+function EmergencyTab({
+	hospitals = [],
+	policeStations = [],
+	dial112Calls = [],
+	officers = [],
+	currentCenter,
+	onLocateNearest,
+	onDrawRoute,
+}: {
+	hospitals?: Hospital[];
+	policeStations?: PoliceStation[];
+	dial112Calls?: Dial112Call[];
+	officers?: OfficerDutyLocation[];
+	currentCenter: { lat: number; lng: number };
+	onLocateNearest: (point: { lat: number; lng: number; title: string, type: string }) => void;
+	onDrawRoute?: (result: any) => void;
+}) {
+	const findNearest = (type: "hospital" | "police") => {
+		// Helper to execute search with a specific origin location
+		const executeSearch = (origin: { lat: number; lng: number }) => {
+
+
+			// Hospital & Police: Use Google Maps Places API for better accuracy
+			if (typeof window !== "undefined" && (window as any).google && (window as any).google.maps) {
+				const google = (window as any).google;
+				const service = new google.maps.places.PlacesService(document.createElement("div"));
+
+				const request = {
+					location: origin,
+					rankBy: google.maps.places.RankBy.DISTANCE,
+					keyword: type === "hospital" ? "hospital" : "police station",
+					openNow: true,
+				};
+
+				service.nearbySearch(request, (results: any[], status: any) => {
+					if (status === google.maps.places.PlacesServiceStatus.OK && results && results.length > 0) {
+						const first = results[0];
+						if (first.geometry && first.geometry.location) {
+							onLocateNearest({
+								lat: first.geometry.location.lat(),
+								lng: first.geometry.location.lng(),
+								title: first.name,
+								type: type === "hospital" ? "Hospital" : "Police Station",
+							});
+
+							// Draw route if callback provided
+							if (onDrawRoute) {
+								const directionsService = new google.maps.DirectionsService();
+								directionsService.route(
+									{
+										origin: origin,
+										destination: first.geometry.location,
+										travelMode: google.maps.TravelMode.DRIVING,
+									},
+									(result: any, status: any) => {
+										if (status === google.maps.DirectionsStatus.OK) {
+											onDrawRoute(result);
+										} else {
+											console.warn("Directions request failed due to " + status);
+										}
+									}
+								);
+							}
+						}
+					} else {
+						console.warn(`Google Maps search for ${type} failed:`, status);
+					}
+				});
+			}
+		};
+
+		// 1. Try to get real user location first
+		if (navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(
+				(position) => {
+					// Success: Use User's GPS Location
+					executeSearch({
+						lat: position.coords.latitude,
+						lng: position.coords.longitude
+					});
+				},
+				(error) => {
+					console.warn("Geolocation failed/denied, falling back to map center:", error);
+					// Error/Denied: Fallback to current map center
+					executeSearch(currentCenter);
+				}
+			);
+		} else {
+			// No support: Fallback to current map center
+			executeSearch(currentCenter);
+		}
+	};
+
+	// Find nearby active incidents (within 5km)
+	const nearbyIncidents = useMemo(() => {
+		return dial112Calls
+			.map(call => ({
+				...call,
+				distance: calculateDistance(currentCenter, { lat: call.latitude, lng: call.longitude })
+			}))
+			.filter(item => item.distance <= 5000) // 5km radius
+			.sort((a, b) => a.distance - b.distance)
+			.slice(0, 3); // Top 3 closest
+	}, [dial112Calls, currentCenter]);
+
+	return (
+		<div className="space-y-4">
+			<div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 text-center">
+				<h3 className="text-lg font-bold text-red-400 mb-1">Emergency Mode</h3>
+				<p className="text-xs text-red-200">Quickly locate nearest safe spots</p>
+			</div>
+
+			<div className="grid grid-cols-1 gap-3">
+				<button
+					onClick={() => findNearest("police")}
+					className="flex items-center justify-between p-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all shadow-lg shadow-blue-900/20 group"
+				>
+					<div className="flex items-center gap-3">
+						<div className="p-2 bg-white/20 rounded-lg">
+							<span className="text-xl">🚔</span>
+						</div>
+						<div className="text-left">
+							<div className="font-bold">Nearest Police Station</div>
+							<div className="text-xs text-blue-200 group-hover:text-white">Click to locate & route</div>
+						</div>
+					</div>
+					<svg className="w-5 h-5 text-blue-300 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+					</svg>
+				</button>
+
+				<button
+					onClick={() => findNearest("hospital")}
+					className="flex items-center justify-between p-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-all shadow-lg shadow-emerald-900/20 group"
+				>
+					<div className="flex items-center gap-3">
+						<div className="p-2 bg-white/20 rounded-lg">
+							<span className="text-xl">🏥</span>
+						</div>
+						<div className="text-left">
+							<div className="font-bold">Nearest Hospital</div>
+							<div className="text-xs text-emerald-200 group-hover:text-white">Click to locate & route</div>
+						</div>
+					</div>
+					<svg className="w-5 h-5 text-emerald-300 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+					</svg>
+				</button>
+
+
+			</div>
+
+			{/* Nearby Active Incidents */}
+			{nearbyIncidents.length > 0 && (
+				<div className="mt-4">
+					<h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Nearby Active Incidents</h4>
+					<div className="space-y-2">
+						{nearbyIncidents.map((incident) => (
+							<button
+								key={incident.id}
+								onClick={() => onLocateNearest({
+									lat: incident.latitude,
+									lng: incident.longitude,
+									title: incident.callType,
+									type: "Dial 112 Call"
+								})}
+								className="w-full text-left p-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 rounded-lg transition-colors group"
+							>
+								<div className="flex items-center justify-between">
+									<div className="flex items-center gap-2">
+										<span className="text-red-400">🚨</span>
+										<div>
+											<div className="text-sm font-medium text-red-200 group-hover:text-red-100">{incident.callType}</div>
+											<div className="text-xs text-red-400/70">{(incident.distance / 1000).toFixed(1)} km away</div>
+										</div>
+									</div>
+									<svg className="w-4 h-4 text-red-400/50 group-hover:text-red-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+									</svg>
+								</div>
+							</button>
+						))}
+					</div>
+				</div>
+			)}
+
+
+		</div>
+	);
+}
+
+// Comprehensive report component for procession routes
+function ProcessionReport({ route, dial112Calls, accidentRecords, allMapPoints }: { route: any; dial112Calls: any[]; accidentRecords: any[]; allMapPoints: any[] }) {
+	const [trafficStatus, setTrafficStatus] = useState<any>(null);
+	const [trafficLoading, setTrafficLoading] = useState(false);
+
+	const stats = useMemo(() => {
+		if (!route?.path) return null;
+		const path = route.path.map((p: any) => ({ lat: p.lat, lng: p.lng })); // Ensure format
+
+		// Religious Places
+		const religiousKeywords = ["temple", "mosque", "church", "dargah", "gurudwara", "mandir", "masjid"];
+		const religiousPlaces = allMapPoints.filter((p: any) => {
+			const name = (p.name || "").toLowerCase();
+			const cat = (p.category_name || "").toLowerCase();
+			const isReligious = religiousKeywords.some((k) => name.includes(k) || cat.includes(k));
+			if (!isReligious) return false;
+			// Use simple bounding box first for speed, then geo check
+			return isPointNearPath({ lat: Number(p.latitude), lng: Number(p.longitude) }, path, 300);
+		});
+
+		// Dial 112 (Critical/Emergency only or all?) - Let's count all nearby
+		const crimes = dial112Calls.filter((c: any) =>
+			isPointNearPath({ lat: c.latitude, lng: c.longitude }, path, 500)
+		);
+
+		// Accidents
+		const accidents = accidentRecords.filter((a: any) =>
+			isPointNearPath({ lat: a.latitude, lng: a.longitude }, path, 500)
+		);
+
+		return {
+			religiousCount: religiousPlaces.length,
+			crimeCount: crimes.length,
+			accidentCount: accidents.length,
+			religiousPlaces,
+		};
+	}, [route, dial112Calls, accidentRecords, allMapPoints]);
+
+	const checkTraffic = () => {
+		if (!window.google?.maps) return;
+		setTrafficLoading(true);
+		const dirs = new window.google.maps.DirectionsService();
+		dirs.route(
+			{
+				origin: route.startPoint,
+				destination: route.endPoint,
+				travelMode: window.google.maps.TravelMode.DRIVING,
+				drivingOptions: {
+					departureTime: new Date(),
+					trafficModel: window.google.maps.TrafficModel.BEST_GUESS,
+				},
+			},
+			(res, status) => {
+				setTrafficLoading(false);
+				if (status === "OK" && res) {
+					const leg = res.routes[0].legs[0];
+					setTrafficStatus({
+						duration: leg.duration?.text,
+						durationTraffic: leg.duration_in_traffic?.text,
+						distance: leg.distance?.text,
+					});
+				}
+			}
+		);
+	};
+
+	if (!route) return null;
+
+	return (
+		<div className="space-y-4 border-t border-gray-700/50 pt-4 mt-2">
+			<h4 className="text-sm font-semibold text-gray-200 uppercase tracking-wider flex items-center gap-2">
+				🛡️ Safety & Traffic Report
+			</h4>
+
+			<div className="grid grid-cols-3 gap-2 text-center">
+				<div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2 flex flex-col items-center justify-center">
+					<div className="text-xl font-bold text-amber-400">{stats?.religiousCount || 0}</div>
+					<div className="text-[10px] text-amber-200 uppercase leading-none mt-1">Religious Places</div>
+				</div>
+				<div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-2 flex flex-col items-center justify-center">
+					<div className="text-xl font-bold text-purple-400">{stats?.crimeCount || 0}</div>
+					<div className="text-[10px] text-purple-200 uppercase leading-none mt-1">112 Calls (500m)</div>
+				</div>
+				<div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2 flex flex-col items-center justify-center">
+					<div className="text-xl font-bold text-red-400">{stats?.accidentCount || 0}</div>
+					<div className="text-[10px] text-red-200 uppercase leading-none mt-1">Accidents (500m)</div>
+				</div>
+			</div>
+
+			<div className="bg-blue-500/5 border border-blue-500/10 rounded-lg p-3">
+				<div className="flex items-center justify-between mb-2">
+					<span className="text-xs font-medium text-blue-200">🚦 Traffic Analysis</span>
+					{!trafficStatus && (
+						<button
+							onClick={checkTraffic}
+							disabled={trafficLoading}
+							className="text-[10px] bg-blue-600 hover:bg-blue-500 text-white px-2 py-1 rounded transition-colors disabled:opacity-50"
+						>
+							{trafficLoading ? "Checking..." : "Check Live Traffic"}
+						</button>
+					)}
+				</div>
+
+				{trafficStatus ? (
+					<div className="space-y-2 text-xs">
+						<div className="flex justify-between items-center bg-black/20 p-1.5 rounded">
+							<span className="text-gray-400">Typical:</span>
+							<span className="text-gray-200 font-mono">{trafficStatus.duration}</span>
+						</div>
+						<div className="flex justify-between items-center bg-black/20 p-1.5 rounded">
+							<span className="text-gray-400">Current Traffic:</span>
+							<span
+								className={`font-bold font-mono ${trafficStatus.durationTraffic !== trafficStatus.duration ? "text-orange-400" : "text-green-400"
+									}`}
+							>
+								{trafficStatus.durationTraffic}
+							</span>
+						</div>
+						<div className="mt-2 text-[10px] text-gray-500 text-center italic">
+							*Based on Google Maps real-time traffic data
+						</div>
+					</div>
+				) : (
+					<div className="text-[10px] text-gray-500 text-center py-2">
+						Click to fetch real-time traffic estimates.
+					</div>
+				)}
+			</div>
+
+			{/* Recommendation */}
+			<div
+				className={`p-3 rounded-lg border flex items-start gap-3 ${stats && (stats.crimeCount > 5 || stats.accidentCount > 5)
+					? "bg-red-900/20 border-red-500/30"
+					: stats && (stats.crimeCount > 0 || stats.accidentCount > 0)
+						? "bg-yellow-900/20 border-yellow-500/30"
+						: "bg-green-900/20 border-green-500/30"
+					}`}
+			>
+				<div className="text-2xl pt-0.5">
+					{stats && (stats.crimeCount > 5 || stats.accidentCount > 5)
+						? "⚠️"
+						: stats && (stats.crimeCount > 0 || stats.accidentCount > 0)
+							? "✋"
+							: "✅"}
+				</div>
+				<div>
+					<div
+						className="text-xs font-bold uppercase mb-1"
+						style={{
+							color:
+								stats && (stats.crimeCount > 5 || stats.accidentCount > 5)
+									? "#fca5a5"
+									: stats && (stats.crimeCount > 0 || stats.accidentCount > 0)
+										? "#fcd34d"
+										: "#86efac",
+						}}
+					>
+						VIIP Route Assessment
+					</div>
+					<p className="text-[11px] leading-relaxed text-gray-300">
+						{stats && (stats.crimeCount > 5 || stats.accidentCount > 5)
+							? "High caution recommended. Significant history of incidents detected along this path."
+							: stats && (stats.crimeCount > 0 || stats.accidentCount > 0)
+								? "Moderate caution advised. Some incidents reported nearby."
+								: "Route appears clear of major reported incidents. Good for travel."}
+					</p>
+				</div>
+			</div>
+		</div>
+	);
+}
 
 export default function Home() {
 	// State for selected point and search
@@ -77,6 +443,7 @@ export default function Home() {
 	const [officerLastUpdated, setOfficerLastUpdated] = useState<Date | null>(null);
 	const [officerPanelActive, setOfficerPanelActive] = useState(false);
 	const [selectedOfficer, setSelectedOfficer] = useState<OfficerDutyLocation | null>(null);
+	const [directions, setDirections] = useState<any>(null); // Google Maps DirectionsResult
 
 	// ATM layer state
 	const [atmLayerVisible, setAtmLayerVisible] = useState(false);
@@ -2227,6 +2594,31 @@ export default function Home() {
 						)}
 					</div>
 				}
+				emergencyContent={
+					<EmergencyTab
+						hospitals={hospitalLocations}
+						policeStations={policeStations}
+						dial112Calls={dial112AllCalls}
+						officers={officerList}
+						currentCenter={
+							selectedPoint?.lat
+								? { lat: selectedPoint.lat, lng: selectedPoint.lng }
+								: mapBounds
+									? { lat: (mapBounds.north + mapBounds.south) / 2, lng: (mapBounds.east + mapBounds.west) / 2 }
+									: { lat: 20.0112771, lng: 74.00833808 }
+						}
+						onLocateNearest={(point) => {
+							setClickedPoint({
+								lat: point.lat,
+								lng: point.lng,
+								title: point.title,
+								group: point.type,
+							});
+							// We could also zoom, but for now just popup
+						}}
+						onDrawRoute={setDirections}
+					/>
+				}
 				processionRoutes={
 					<div className="space-y-4">
 						{processedProcessionRoutes.length > 0 ? (
@@ -2778,6 +3170,7 @@ export default function Home() {
 					onCCTVToggle={handleCCTVToggle}
 					onBoundsChanged={setMapBounds}
 					showLayerControls={false}
+					directions={directions}
 				/>
 
 				{/* Street View popup container (top-right) */}
@@ -2862,28 +3255,13 @@ export default function Home() {
 							</div>
 							{selectedRoute?.description && <p className="text-muted-foreground">{selectedRoute.description}</p>}
 
-							{/* Static AI Gap Analysis substitute */}
-							<div className="mt-4 rounded-md border border-white/10 bg-black/40">
-								<div className="px-4 py-2 text-sm font-semibold">🤖 AI Gap Analysis</div>
-								<div className="px-4 pb-3 space-y-2 text-xs">
-									<div className="flex items-center justify-between">
-										<span>📹 CCTV Gaps</span>
-										<span className="text-amber-400">22</span>
-									</div>
-									<div className="flex items-center justify-between">
-										<span>🚔 Police Gaps</span>
-										<span className="text-blue-400">22</span>
-									</div>
-									<div className="flex items-center justify-between">
-										<span>🏧 ATM Gaps</span>
-										<span className="text-green-300">22</span>
-									</div>
-									<div className="flex items-center justify-between">
-										<span>🏥 Medical Gaps</span>
-										<span className="text-emerald-300">22</span>
-									</div>
-								</div>
-							</div>
+							{/* Comprehensive Procession Report */}
+							<ProcessionReport
+								route={selectedRoute}
+								dial112Calls={dial112AllCalls}
+								accidentRecords={accidentAllRecords}
+								allMapPoints={Object.values(categoryData).flat()}
+							/>
 						</div>
 						<div className="p-4">
 							<DrawerClose className="inline-flex items-center justify-center rounded-md border px-3 py-2 text-sm bg-white/10 text-white">Close</DrawerClose>

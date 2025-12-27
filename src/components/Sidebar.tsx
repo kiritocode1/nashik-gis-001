@@ -143,6 +143,83 @@ const ChatIcon = ({ className }: { className?: string }) => (
 	</svg>
 );
 
+const EmergencyIcon = ({ className }: { className?: string }) => (
+	<svg
+		className={className}
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			strokeWidth={2}
+			d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+		/>
+	</svg>
+);
+
+// ... existing icons ...
+
+const sidebarSections = [
+	{
+		id: "layers",
+		icon: LayersIcon,
+		title: "Layers",
+		description: "Manage map layers",
+	},
+	{
+		id: "officers",
+		icon: ({ className }: { className?: string }) => (
+			<svg
+				className={className}
+				fill="none"
+				stroke="currentColor"
+				viewBox="0 0 24 24"
+			>
+				<path
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					strokeWidth={2}
+					d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+				/>
+			</svg>
+		),
+		title: "Officer Tracking",
+		description: "Live officer locations",
+	},
+	{
+		id: "search",
+		icon: SearchIcon,
+		title: "Search",
+		description: "Search locations",
+	},
+	{
+		id: "emergency",
+		icon: EmergencyIcon,
+		title: "Emergency Mode",
+		description: "Find nearest safe spots",
+	},
+	{
+		id: "routes",
+		icon: RouteIcon,
+		title: "Procession Routes",
+		description: "Manage festival routes",
+	},
+	{
+		id: "categories",
+		icon: CategoriesIcon,
+		title: "Categories",
+		description: "Browse and toggle categories",
+	},
+	{
+		id: "chat",
+		icon: ChatIcon,
+		title: "AI Assistant",
+		description: "Chat with AI about crime data",
+	},
+];
+
 export interface SearchResult {
 	id: string | number;
 	title: string;
@@ -153,6 +230,7 @@ export interface SearchResult {
 
 export interface SidebarProps {
 	children: React.ReactNode;
+	emergencyContent?: React.ReactNode;
 	processionRoutes?: React.ReactNode;
 	settingsContent?: React.ReactNode;
 	officerTrackingContent?: React.ReactNode;
@@ -248,6 +326,7 @@ const SearchResultGroup = ({
 export default function Sidebar({
 	children,
 	processionRoutes,
+	emergencyContent, // Added
 	settingsContent,
 	officerTrackingContent,
 	onActiveSectionChange,
@@ -304,58 +383,7 @@ export default function Sidebar({
 		};
 	}, [resize, stopResizing]);
 
-	const sidebarSections = [
-		{
-			id: "layers",
-			icon: LayersIcon,
-			title: "Layers",
-			description: "Manage map layers",
-		},
-		{
-			id: "officers",
-			icon: ({ className }: { className?: string }) => (
-				<svg
-					className={className}
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						strokeLinecap="round"
-						strokeLinejoin="round"
-						strokeWidth={2}
-						d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-					/>
-				</svg>
-			),
-			title: "Officer Tracking",
-			description: "Live officer locations",
-		},
-		{
-			id: "search",
-			icon: SearchIcon,
-			title: "Search",
-			description: "Search locations",
-		},
-		{
-			id: "routes",
-			icon: RouteIcon,
-			title: "Procession Routes",
-			description: "Manage festival routes",
-		},
-		{
-			id: "categories",
-			icon: CategoriesIcon,
-			title: "Categories",
-			description: "Browse and toggle categories",
-		},
-		{
-			id: "chat",
-			icon: ChatIcon,
-			title: "AI Assistant",
-			description: "Chat with AI about crime data",
-		},
-	];
+
 
 	// toggleSidebar removed as it's not currently used
 
@@ -375,7 +403,7 @@ export default function Sidebar({
 			{/* Sidebar Container */}
 			<div className="relative flex pointer-events-auto shadow-2xl shadow-black/50">
 				{/* Icon Bar */}
-				<div className="w-16 bg-black/90 backdrop-blur-md border-r border-white/5 flex flex-col items-center py-4 space-y-4 z-20">
+				<div className="w-16 bg-black/90 backdrop-blur-md border-r border-white/5 flex flex-col items-center py-4 space-y-4 z-20 overflow-y-auto no-scrollbar">
 					{/* Logo Area */}
 					<div className="mb-2 p-2.5 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 shadow-[0_0_15px_rgba(37,99,235,0.2)]">
 						<MapIcon className="w-6 h-6" />
@@ -476,6 +504,7 @@ export default function Sidebar({
 								{activeSection === "search" && (
 									<div className="flex-1 overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
 										<div className="space-y-5">
+											{/* Search Content */}
 											<div className="sticky top-0 -mx-5 px-5 pb-4 bg-black/95 backdrop-blur-xl z-10 border-b border-white/5">
 												<div className="relative group">
 													<SearchIcon className="absolute left-3.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
@@ -539,6 +568,12 @@ export default function Sidebar({
 												)}
 											</div>
 										</div>
+									</div>
+								)}
+
+								{activeSection === "emergency" && (
+									<div className="flex-1 overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+										<div className="space-y-4">{emergencyContent}</div>
 									</div>
 								)}
 

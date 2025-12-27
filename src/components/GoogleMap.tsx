@@ -110,6 +110,7 @@ interface GoogleMapProps {
 	onCCTVToggle?: (visible: boolean) => void;
 	onBoundsChanged?: (bounds: { north: number; south: number; east: number; west: number; zoom: number }) => void;
 	showLayerControls?: boolean;
+	directions?: any; // Google Maps DirectionsResult
 }
 
 declare global {
@@ -142,6 +143,7 @@ export default function GoogleMap({
 	onCCTVToggle,
 	onBoundsChanged,
 	showLayerControls = false,
+	directions,
 }: GoogleMapProps): JSX.Element {
 	const mapRef = useRef<HTMLDivElement>(null);
 	const [isLoaded, setIsLoaded] = useState(false);
@@ -638,6 +640,30 @@ export default function GoogleMap({
 			}
 		}
 	}, [heatmap, heatmapVisible, isLoaded]);
+
+	// Handle Directions (Routing)
+	const directionsRendererRef = useRef<any>(null);
+	useEffect(() => {
+		if (mapInstanceRef.current && isLoaded && window.google?.maps) {
+			if (!directionsRendererRef.current) {
+				directionsRendererRef.current = new window.google.maps.DirectionsRenderer({
+					suppressMarkers: false,
+					polylineOptions: {
+						strokeColor: "#3b82f6", // Blue-500
+						strokeWeight: 5,
+						strokeOpacity: 0.8,
+					},
+				});
+				directionsRendererRef.current.setMap(mapInstanceRef.current);
+			}
+
+			if (directions) {
+				directionsRendererRef.current.setDirections(directions);
+			} else {
+				directionsRendererRef.current.setDirections({ routes: [] });
+			}
+		}
+	}, [directions, isLoaded]);
 
 	// Enhanced KML Effect using custom parser
 	useEffect(() => {

@@ -734,3 +734,30 @@ export async function fetchCategoryPoints(categoryId: number, subcategoryId?: nu
 		throw error;
 	}
 }
+/**
+ * Snap GPS points to the nearest road using Google Maps Roads API
+ * Useful for correcting raw GPS trails from patrol vehicles
+ */
+export async function snapToRoads(points: { lat: number; lng: number }[], apiKey: string): Promise<{ latitude: number; longitude: number }[]> {
+	if (points.length === 0) return [];
+
+	try {
+		const path = points.map((p) => `${p.lat},${p.lng}`).join("|");
+		const url = `https://roads.googleapis.com/v1/snapToRoads?path=${path}&interpolate=true&key=${apiKey}`;
+
+		const response = await fetch(url);
+		const data = await response.json();
+
+		if (data.snappedPoints) {
+			return data.snappedPoints.map((p: any) => ({
+				latitude: p.location.latitude,
+				longitude: p.location.longitude,
+			}));
+		}
+
+		return points.map(p => ({ latitude: p.lat, longitude: p.lng }));
+	} catch (error) {
+		console.error("Failed to snap points to roads:", error);
+		return points.map(p => ({ latitude: p.lat, longitude: p.lng }));
+	}
+}

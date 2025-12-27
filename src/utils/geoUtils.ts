@@ -184,3 +184,86 @@ export function findNearestBoundary(
 
     return nearest;
 }
+
+/**
+ * Check if a point is near a polyline path (within threshold meters)
+ * @param point - The point to check {lat, lng}
+ * @param path - Array of points forming the polyline
+ * @param thresholdMeters - Distance threshold in meters
+ * @returns true if point is within threshold of any segment of the path
+ */
+export function isPointNearPath(
+    point: { lat: number; lng: number },
+    path: Array<{ lat: number; lng: number }>,
+    thresholdMeters: number = 500
+): boolean {
+    if (path.length < 2) return false;
+
+    // Helper: Distance from point P to line segment AB
+    const distToSegment = (
+        p: { lat: number; lng: number },
+        a: { lat: number; lng: number },
+        b: { lat: number; lng: number }
+    ) => {
+        const x = p.lng, y = p.lat;
+        const x1 = a.lng, y1 = a.lat;
+        const x2 = b.lng, y2 = b.lat;
+
+        const A = x - x1;
+        const B = y - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+
+        const dot = A * C + B * D;
+        const len_sq = C * C + D * D;
+        let param = -1;
+
+        if (len_sq != 0) param = dot / len_sq;
+
+        let xx, yy;
+
+        if (param < 0) {
+            xx = x1;
+            yy = y1;
+        } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+        } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+        }
+
+        const dx = x - xx;
+        const dy = y - yy;
+
+        // Approximate conversion to meters (roughly 111km per degree)
+        return Math.sqrt(dx * dx + dy * dy) * 111320;
+    };
+
+    // Optimization: Check bounding box first
+    let minLat = path[0].lat, maxLat = path[0].lat;
+    let minLng = path[0].lng, maxLng = path[0].lng;
+
+    path.forEach(p => {
+        if (p.lat < minLat) minLat = p.lat;
+        if (p.lat > maxLat) maxLat = p.lat;
+        if (p.lng < minLng) minLng = p.lng;
+        if (p.lng > maxLng) maxLng = p.lng;
+    });
+
+    // Roughly convert meters to degrees (0.001 deg ~ 111m)
+    const buffer = thresholdMeters / 111000;
+
+    if (point.lat < minLat - buffer || point.lat > maxLat + buffer ||
+        point.lng < minLng - buffer || point.lng > maxLng + buffer) {
+        return false;
+    }
+
+    // Check distance to each segment
+    for (let i = 0; i < path.length - 1; i++) {
+        const dist = distToSegment(point, path[i], path[i + 1]);
+        if (dist <= thresholdMeters) return true;
+    }
+
+    return false;
+}
