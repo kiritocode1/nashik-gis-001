@@ -163,6 +163,88 @@ export interface SidebarProps {
 	isSearching?: boolean;
 }
 
+// Helper component for Search Result Groups (Accordions)
+const SearchResultGroup = ({
+	type,
+	results,
+	onResultClick
+}: {
+	type: string;
+	results: SearchResult[];
+	onResultClick?: (result: SearchResult) => void;
+}) => {
+	const [isExpanded, setIsExpanded] = useState(true);
+
+	const getTypeIcon = (type: string) => {
+		switch (type.toLowerCase()) {
+			case 'police station': return '🚔';
+			case 'hospital': return '🏥';
+			case 'bank': return '🏦';
+			case 'atm': return '🏧';
+			case 'cctv': return '🎥';
+			case 'officer': return '👮';
+			case 'accident': return '🚗';
+			case 'dial 112 call': return '🚨';
+			case 'area summary': return '📍';
+			default: return '📌';
+		}
+	};
+
+	return (
+		<div className="border border-white/10 rounded-xl overflow-hidden bg-white/[0.02]">
+			{/* Accordion Header */}
+			<button
+				onClick={() => setIsExpanded(!isExpanded)}
+				className="w-full flex items-center justify-between p-3.5 bg-white/[0.03] hover:bg-white/[0.05] transition-all group"
+			>
+				<div className="flex items-center gap-2.5">
+					<span className="text-lg">{getTypeIcon(type)}</span>
+					<div className="text-left">
+						<h3 className="text-sm font-semibold text-gray-200 group-hover:text-blue-200 transition-colors">
+							{type}
+						</h3>
+						<p className="text-xs text-gray-500">
+							{results.length} result{results.length !== 1 ? 's' : ''}
+						</p>
+					</div>
+				</div>
+				<svg
+					className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+				</svg>
+			</button>
+
+			{/* Accordion Content */}
+			<div
+				className={`transition-all duration-200 ${isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+					} overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent`}
+			>
+				<div className="p-2 space-y-1.5">
+					{results.map((result) => (
+						<button
+							key={`${result.type}-${result.id}`}
+							onClick={() => onResultClick?.(result)}
+							className="w-full text-left p-3 rounded-lg bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-blue-500/20 transition-all group relative overflow-hidden"
+						>
+							<div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-blue-500/0 group-hover:from-blue-500/5 group-hover:to-transparent transition-all duration-500" />
+							<div className="relative z-10">
+								<h4 className="font-medium text-gray-200 group-hover:text-blue-200 transition-colors text-sm">
+									{result.title}
+								</h4>
+								{result.subtitle && <p className="text-xs text-gray-500 mt-1">{result.subtitle}</p>}
+							</div>
+						</button>
+					))}
+				</div>
+			</div>
+		</div>
+	);
+};
+
 export default function Sidebar({
 	children,
 	processionRoutes,
@@ -413,28 +495,30 @@ export default function Sidebar({
 											</div>
 
 											<div className="space-y-2">
-												{searchResults && searchResults.length > 0 ? (
-													searchResults.map((result) => (
-														<button
-															key={`${result.type}-${result.id}`}
-															onClick={() => onSearchResultClick?.(result)}
-															className="w-full text-left p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-blue-500/20 transition-all group relative overflow-hidden"
-														>
-															<div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-blue-500/0 group-hover:from-blue-500/5 group-hover:to-transparent transition-all duration-500" />
-															<div className="flex items-start justify-between relative z-10">
-																<div>
-																	<h4 className="font-medium text-gray-200 group-hover:text-blue-200 transition-colors text-sm">
-																		{result.title}
-																	</h4>
-																	{result.subtitle && <p className="text-xs text-gray-500 mt-1">{result.subtitle}</p>}
-																</div>
-																<span className="text-[10px] uppercase tracking-wider font-semibold px-2 py-1 rounded-md bg-zinc-900 text-gray-400 border border-white/5">
-																	{result.type}
-																</span>
-															</div>
-														</button>
-													))
-												) : searchQuery.length > 0 && !isSearching ? (
+												{searchResults && searchResults.length > 0 ? (() => {
+													// Group results by type
+													const groupedResults = searchResults.reduce((acc, result) => {
+														const type = result.type;
+														if (!acc[type]) {
+															acc[type] = [];
+														}
+														acc[type].push(result);
+														return acc;
+													}, {} as Record<string, SearchResult[]>);
+
+													return (
+														<div className="space-y-2">
+															{Object.entries(groupedResults).map(([type, results]) => (
+																<SearchResultGroup
+																	key={type}
+																	type={type}
+																	results={results}
+																	onResultClick={onSearchResultClick}
+																/>
+															))}
+														</div>
+													);
+												})() : searchQuery.length > 0 && !isSearching ? (
 													<div className="flex flex-col items-center justify-center py-10 opacity-50">
 														<SearchIcon className="w-8 h-8 text-gray-600 mb-2" />
 														<p className="text-sm text-gray-500 font-medium">No results found</p>
@@ -514,6 +598,6 @@ export default function Sidebar({
 					)}
 				</div>
 			</div>
-		</div>
+		</div >
 	);
 }

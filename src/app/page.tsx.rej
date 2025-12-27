@@ -1,0 +1,44 @@
+@@ -240,30 +240,25 @@
+ 					dataType = 'dial112';
+ 				}
+ 
+-				// Load KML features if not already loaded
++				console.log(`🔍 Area search: "${areaName}", type: ${dataType}`);
++
++				//Use pre-loaded KML features only
+ 				if (!kmlFeatures) {
+-					try {
+-						console.log("🔍 Loading KML features for area search...");
+-						const {parseKMLFile } = await import("@/utils/kmlParser");
+-						const parsed = await parseKMLFile(kmlAbsoluteUrl);
+-						if (parsed.success) {
+-							setKmlFeatures(parsed.features);
+-							setKmlMarkers(parsed.markers);
+-							const { findBoundaryByName } = await import("@/utils/geoUtils");
+-							targetBoundary = findBoundaryByName(areaName, parsed.features);
+-						}
+-					} catch (error) {
+-						console.error("Failed to load KML for area search:", error);
+-					}
+-				} else {
+-					const { findBoundaryByName } = await import("@/utils/geoUtils");
+-					targetBoundary = findBoundaryByName(areaName, kmlFeatures);
++					console.warn("⚠️ KML features not loaded yet, skipping area search");
++					areaSearchMode = false;
++					break;
+ 				}
+ 
++				// Find the boundary
++				const { findBoundaryByName } = await import("@/utils/geoUtils");
++				targetBoundary = findBoundaryByName(areaName, kmlFeatures);
++
+ 				if (targetBoundary) {
+-					console.log(`✅ Found boundary: ${targetBoundary.name} for query: ${areaName} (type: ${dataType})`);
++					console.log(`✅ Found boundary: ${targetBoundary.name} (${targetBoundary.coordinates.length} points)`);
+ 				} else {
+ 					console.log(`⚠️ No boundary found for: "${areaName}"`);
++					console.log(`Available: ${kmlFeatures.slice(0, 5).map(f => f.name).join(", ")}...`);
++					areaSearchMode = false; // Fall back to normal search
+ 				}
+ 
+ 				break;

@@ -20,10 +20,8 @@ import {
 	type Hospital,
 	type Dial112Call,
 	streamDial112Calls,
-	fetchDial112Calls,
 	type AccidentRecord,
 	streamAccidentData,
-	fetchAccidentRecords,
 	fetchMapData,
 	type MapDataPoint,
 	fetchProcessionRoutes,
@@ -242,18 +240,25 @@ export default function Home() {
 						dataType = 'dial112';
 					}
 
-					console.log(`🔍 Area search: "${areaName}", type: ${dataType}`);
-
-					// Use pre-loaded KML features only
+					// Load KML features if not already loaded
 					if (!kmlFeatures) {
-						console.warn("⚠️ KML features not loaded yet, skipping area search");
-						areaSearchMode = false;
-						break;
+						try {
+							console.log("🔍 Loading KML features for area search...");
+							const { parseKMLFile } = await import("@/utils/kmlParser");
+							const parsed = await parseKMLFile(kmlAbsoluteUrl);
+							if (parsed.success) {
+								setKmlFeatures(parsed.features);
+								setKmlMarkers(parsed.markers);
+								const { findBoundaryByName } = await import("@/utils/geoUtils");
+								targetBoundary = findBoundaryByName(areaName, parsed.features);
+							}
+						} catch (error) {
+							console.error("Failed to load KML for area search:", error);
+						}
+					} else {
+						const { findBoundaryByName } = await import("@/utils/geoUtils");
+						targetBoundary = findBoundaryByName(areaName, kmlFeatures);
 					}
-
-					// Find the boundary
-					const { findBoundaryByName } = await import("@/utils/geoUtils");
-					targetBoundary = findBoundaryByName(areaName, kmlFeatures);
 
 					if (targetBoundary) {
 						console.log(`✅ Found boundary: ${targetBoundary.name} for query: ${areaName} (type: ${dataType})`);
@@ -335,11 +340,7 @@ export default function Home() {
 
 					// Filter based on detected data type
 					if (dataType === 'police') {
-						// 1. From dedicated/explicit map category
-						const policeStations = mapDataPoints.filter(p =>
-							p.category_name === "पोलीस आस्थापना" ||
-							(p.name && p.name.toLowerCase().includes("police"))
-						);
+						const policeStations = mapDataPoints.filter(p => p.category_name === "पोलीस आस्थापना");
 						const count = addFilteredResults(
 							policeStations,
 							"Police Station",
@@ -348,113 +349,29 @@ export default function Home() {
 						);
 						console.log(`🚔 Found ${count} police stations in ${targetBoundary.name}`);
 					} else if (dataType === 'hospital') {
-						// 1. From Hospitals API
-						let count = addFilteredResults(
+						const count = addFilteredResults(
 							hospitalsList,
 							"Hospital",
 							(item: unknown) => (item as Hospital).hospital_name || (item as Hospital).name,
 							(item: unknown) => (item as Hospital).type
 						);
-
-						// 2. From Map Data (generic points that are hospitals)
-						const mapHospitals = mapDataPoints.filter(p => {
-							const name = (p.name || "").toLowerCase();
-							const cat = (p.category_name || "").toLowerCase();
-							return name.includes("hospital") || name.includes("medical") || name.includes("clinic") || name.includes("phc") || name.includes("rh") || cat.includes("hospital") || cat.includes("medical");
-						});
-
-						count += addFilteredResults(
-							mapHospitals,
-							"Hospital",
-							(item: unknown) => (item as MapDataPoint).name,
-							(item: unknown) => (item as MapDataPoint).address
-						);
-
 						console.log(`🏥 Found ${count} hospitals in ${targetBoundary.name}`);
 					} else if (dataType === 'bank') {
-						// 1. From Banks API
-						let count = addFilteredResults(
+						const count = addFilteredResults(
 							banksList,
 							"Bank",
 							(item: unknown) => `${(item as BankLocation).bank_name} - ${(item as BankLocation).branch_name}`,
 							(item: unknown) => (item as BankLocation).address
 						);
-
-						// 2. From Map Data
-						const mapBanks = mapDataPoints.filter(p => {
-							const name = (p.name || "").toLowerCase();
-							return (name.includes("bank") && !name.includes("embankment"));
-						});
-
-						count += addFilteredResults(
-							mapBanks,
-							"Bank",
-							(item: unknown) => (item as MapDataPoint).name,
-							(item: unknown) => (item as MapDataPoint).address
-						);
-
 						console.log(`🏦 Found ${count} banks in ${targetBoundary.name}`);
 					} else if (dataType === 'atm') {
-						// 1. From ATMs API
-						let count = addFilteredResults(
+						const count = addFilteredResults(
 							atmsList,
 							"ATM",
 							(item: unknown) => `${(item as ATMLocation).bank_name} ATM`,
 							(item: unknown) => (item as ATMLocation).address
 						);
-
-						// 2. From Map Data
-						const mapAtms = mapDataPoints.filter(p => {
-							const name = (p.name || "").toLowerCase();
-							return name.includes("atm");
-						});
-
-						count += addFilteredResults(
-							mapAtms,
-							"ATM",
-							(item: unknown) => (item as MapDataPoint).name,
-							(item: unknown) => (item as MapDataPoint).address
-						);
-
 						console.log(`🏧 Found ${count} ATMs in ${targetBoundary.name}`);
-					} else if (dataType === 'accident') {
-						let accidents = accidentAllRecords;
-						if (accidents.length === 0) {
-							try {
-								const fetchedAccidents = await fetchAccidentRecords();
-								accidents = fetchedAccidents;
-								setAccidentAllRecords(fetchedAccidents);
-							} catch (error) {
-								console.error("Failed to fetch accidents:", error);
-							}
-						}
-
-						const count = addFilteredResults(
-							accidents,
-							"Accident",
-							(item: unknown) => `Accident in ${(item as AccidentRecord).district}`,
-							(item: unknown) => `Grid: ${(item as AccidentRecord).gridId}`
-						);
-						console.log(`🚗 Found ${count} accidents in ${targetBoundary.name}`);
-					} else if (dataType === 'dial112') {
-						let dial112Data = dial112AllCalls;
-						if (dial112Data.length === 0) {
-							try {
-								const fetchedCalls = await fetchDial112Calls();
-								dial112Data = fetchedCalls;
-								setDial112AllCalls(fetchedCalls);
-							} catch (error) {
-								console.error("Failed to fetch dial 112 calls:", error);
-							}
-						}
-
-						const count = addFilteredResults(
-							dial112Data,
-							"Dial 112 Call",
-							(item: unknown) => `Call: ${(item as Dial112Call).callType || 'Unknown'}`,
-							(item: unknown) => new Date((item as Dial112Call).receivedAt).toLocaleDateString()
-						);
-						console.log(`🚨 Found ${count} dial 112 calls in ${targetBoundary.name}`);
 					} else if (dataType === 'cctv') {
 						const cctvList = cctvLocations.length > 0 ? cctvLocations : await fetchCCTVLocations().catch(() => []);
 						const count = addFilteredResults(

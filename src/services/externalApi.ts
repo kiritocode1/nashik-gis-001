@@ -552,6 +552,25 @@ export async function fetchDial112Calls(): Promise<Dial112Call[]> {
 }
 
 /**
+ * Fetch accident records parsed from local CSV (API route)
+ */
+export async function fetchAccidentRecords(): Promise<AccidentRecord[]> {
+	try {
+		console.log("🚗 Fetching accident records (CSV via API route)...");
+		const response = await fetch("/api/accidents", { cache: "no-store" });
+		if (!response.ok) throw new Error(`HTTP ${response.status}`);
+		const json: { success: boolean; data: AccidentRecord[] } = await response.json();
+		if (!json.success) throw new Error("Accidents API returned success=false");
+		const records = json.data.filter((r) => Number.isFinite(r.latitude) && Number.isFinite(r.longitude));
+		console.log(`✅ Loaded ${records.length} accident records`);
+		return records;
+	} catch (error) {
+		console.error("❌ Error fetching accident records:", error);
+		return [];
+	}
+}
+
+/**
  * Fetch map data from the external API
  */
 export async function fetchMapData(): Promise<MapDataResponse> {
