@@ -2463,7 +2463,7 @@ export default function Home() {
 							</div>
 						) : (
 							<div className="space-y-2">
-								{categories.map((category) => {
+								{categories.filter(category => category.name === "Police Stations").map((category) => {
 									const isExpanded = expandedCategories.has(category.id);
 									const isLoading = categoryLoading[category.id] || false;
 									const pointCount = categoryData[category.id]?.length || 0;
