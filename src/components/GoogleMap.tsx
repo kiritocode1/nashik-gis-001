@@ -109,6 +109,8 @@ interface GoogleMapProps {
 	// onCCTVToggle is reserved for future use to avoid breaking API
 	onCCTVToggle?: (visible: boolean) => void;
 	onBoundsChanged?: (bounds: { north: number; south: number; east: number; west: number; zoom: number }) => void;
+	/** Fired when hovering over a KML boundary polygon */
+	onBoundaryHover?: (boundary: { name: string; lat: number; lng: number } | null) => void;
 	showLayerControls?: boolean;
 	directions?: any; // Google Maps DirectionsResult
 }
@@ -142,6 +144,7 @@ export default function GoogleMap({
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	onCCTVToggle,
 	onBoundsChanged,
+	onBoundaryHover,
 	showLayerControls = false,
 	directions,
 }: GoogleMapProps): JSX.Element {
@@ -152,10 +155,11 @@ export default function GoogleMap({
 	const groupMarkersRef = useRef<Map<string, any[]>>(new Map());
 	const heatmapRef = useRef<any>(null);
 	const kmlLayerRef = useRef<any>(null);
-	const geoJsonLayerRef = useRef<boolean | null>(null);
+	const geoJsonLayerRef = useRef<any>(null);
 	const kmlPolygonsRef = useRef<any[]>([]);
 	const kmlMarkersRef = useRef<any[]>([]);
 	const kmlAbortControllerRef = useRef<AbortController | null>(null);
+	const kmlTooltipRef = useRef<HTMLDivElement | null>(null); // Custom tooltip that follows mouse
 	const geoJsonAbortControllerRef = useRef<AbortController | null>(null);
 	const geoJsonFeaturesRef = useRef<any[]>([]);
 	const polylinesRef = useRef<any[]>([]);
@@ -784,19 +788,106 @@ export default function GoogleMap({
 						markers: result.markers.length,
 					});
 
+					// Create custom tooltip element if not exists
+					if (!kmlTooltipRef.current) {
+						const tooltip = document.createElement('div');
+						tooltip.id = 'kml-boundary-tooltip';
+						tooltip.style.cssText = `
+							position: fixed;
+							pointer-events: none;
+							z-index: 9999;
+							background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+							padding: 8px 12px;
+							border-radius: 6px;
+							box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+							border: 1px solid rgba(0, 212, 255, 0.4);
+							font-family: system-ui, -apple-system, sans-serif;
+							display: none;
+							transition: opacity 0.15s ease;
+						`;
+						document.body.appendChild(tooltip);
+						kmlTooltipRef.current = tooltip;
+					}
+
+					// Default and hover styles for boundaries
+					const defaultStyle = {
+						strokeColor: "#FF0000",
+						strokeOpacity: 0.8,
+						strokeWeight: 2,
+						fillColor: "#FF0000",
+						fillOpacity: 0.35,
+					};
+
+					const hoverStyle = {
+						strokeColor: "#00D4FF",
+						strokeOpacity: 1,
+						strokeWeight: 3,
+						fillColor: "#00D4FF",
+						fillOpacity: 0.5,
+					};
+
 					// Render polygon features (boundaries)
 					result.features.forEach((feature) => {
 						if (feature.type === "polygon") {
 							const polygon = new window.google.maps.Polygon({
 								paths: feature.coordinates,
-								strokeColor: "#FF0000",
-								strokeOpacity: 0.8,
-								strokeWeight: 2,
-								fillColor: "#FF0000",
-								fillOpacity: 0.35,
+								...defaultStyle,
 								map: mapInstanceRef.current,
 							});
 
+							// Store the area name for mousemove handler
+							let currentAreaName = feature.name || 'Unknown Area';
+
+							// Hover effect: highlight on mouseover
+							polygon.addListener("mouseover", (event: any) => {
+								// Apply hover style
+								polygon.setOptions(hoverStyle);
+
+								// Show custom tooltip
+								if (kmlTooltipRef.current) {
+									kmlTooltipRef.current.innerHTML = `
+										<div style="color: #00D4FF; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; opacity: 0.8;">📍 Area</div>
+										<div style="color: #ffffff; font-size: 13px; font-weight: 700;">${currentAreaName}</div>
+									`;
+									kmlTooltipRef.current.style.display = 'block';
+								}
+
+								// Callback for external handling
+								if (onBoundaryHover && event.latLng) {
+									onBoundaryHover({
+										name: currentAreaName,
+										lat: event.latLng.lat(),
+										lng: event.latLng.lng(),
+									});
+								}
+							});
+
+							// Update tooltip position on mouse move within polygon
+							polygon.addListener("mousemove", (event: any) => {
+								if (kmlTooltipRef.current && event.domEvent) {
+									const offsetX = 15;
+									const offsetY = 15;
+									kmlTooltipRef.current.style.left = `${event.domEvent.clientX + offsetX}px`;
+									kmlTooltipRef.current.style.top = `${event.domEvent.clientY + offsetY}px`;
+								}
+							});
+
+							// Reset style on mouseout
+							polygon.addListener("mouseout", () => {
+								polygon.setOptions(defaultStyle);
+
+								// Hide custom tooltip
+								if (kmlTooltipRef.current) {
+									kmlTooltipRef.current.style.display = 'none';
+								}
+
+								// Callback for external handling
+								if (onBoundaryHover) {
+									onBoundaryHover(null);
+								}
+							});
+
+							// Click handler (existing)
 							polygon.addListener("click", (event: any) => {
 								if (onPointClick && event.latLng) {
 									onPointClick({
@@ -855,7 +946,7 @@ export default function GoogleMap({
 		};
 
 		handleEnhancedKML();
-	}, [kmlLayer, kmlVisible, isLoaded, onPointClick]);
+	}, [kmlLayer, kmlVisible, isLoaded, onPointClick, onBoundaryHover]);
 
 	// Enhanced GeoJSON Effect with proper cleanup
 	useEffect(() => {
