@@ -506,6 +506,10 @@ export default function Home() {
 	const [kmlMarkers, setKmlMarkers] = useState<KMLMarker[] | null>(null);
 	const [policeStations, setPoliceStations] = useState<PoliceStation[] | null>(null);
 
+	// Area View state - for exploring data within a selected boundary
+	const [selectedBoundary, setSelectedBoundary] = useState<KMLFeature | null>(null);
+	const [sidebarActiveSection, setSidebarActiveSection] = useState<string | null>(null);
+
 	// State for absolute URLs (client-side only)
 	const [kmlAbsoluteUrl, setKmlAbsoluteUrl] = useState("/kml/nashik_gramin.kml");
 
@@ -2375,6 +2379,18 @@ export default function Home() {
 
 	// Handle marker clicks
 	const handlePointClick = (point: { lat: number; lng: number; title?: string; group?: string; meta?: Record<string, unknown> }) => {
+		// Check if this is a boundary click
+		if (point.group === "Nashik Gramin Boundaries" && point.title && kmlFeatures) {
+			// Find the matching boundary feature by name
+			const boundary = kmlFeatures.find(f => f.name === point.title);
+			if (boundary) {
+				console.log("📍 Boundary clicked:", boundary.name);
+				setSelectedBoundary(boundary);
+				setSidebarActiveSection("areaview");
+				return;
+			}
+		}
+
 		const officerId = typeof point.meta?.officerId === "string" ? (point.meta.officerId as string) : undefined;
 		if (officerId && point.group === "Duty Officers") {
 			const matchedOfficer = officerList.find((officer) => officer.officerId === officerId);
@@ -2410,6 +2426,166 @@ export default function Home() {
 	// 	}
 	// };
 
+	// Area View Content - shows filtered data for selected boundary
+	const areaViewContent = useMemo(() => {
+		if (!selectedBoundary) {
+			return (
+				<div className="text-center py-8">
+					<div className="text-5xl mb-4">🗺️</div>
+					<h3 className="text-lg font-semibold text-gray-200 mb-2">Select an Area</h3>
+					<p className="text-sm text-gray-400">
+						Enable KML Boundaries and click on any area to explore its data
+					</p>
+				</div>
+			);
+		}
+
+		// Filter data within the selected boundary
+		const filterInBoundary = <T extends { latitude?: number | string; lng?: number; lat?: number; longitude?: number | string }>(items: T[]): T[] => {
+			return items.filter(item => {
+				const lat = typeof item.latitude === 'string' ? parseFloat(item.latitude) : (item.latitude ?? item.lat);
+				const lng = typeof item.longitude === 'string' ? parseFloat(item.longitude) : (item.longitude ?? item.lng);
+				if (lat === undefined || lng === undefined) return false;
+				return isPointInPolygon({ lat, lng }, selectedBoundary.coordinates);
+			});
+		};
+
+		const filteredPolice = filterInBoundary(policeLocations);
+		const filteredHospitals = filterInBoundary(hospitalLocations);
+		const filteredAtms = filterInBoundary(atmLocations);
+		const filteredBanks = filterInBoundary(bankLocations);
+		const filteredAccidents = filterInBoundary(accidentAllRecords);
+		const filteredDial112 = filterInBoundary(dial112AllCalls);
+
+		const categories = [
+			{ icon: "🚔", label: "Police Stations", count: filteredPolice.length, items: filteredPolice, type: "police" },
+			{ icon: "🏥", label: "Hospitals", count: filteredHospitals.length, items: filteredHospitals, type: "hospital" },
+			{ icon: "🏧", label: "ATMs", count: filteredAtms.length, items: filteredAtms, type: "atm" },
+			{ icon: "🏦", label: "Banks", count: filteredBanks.length, items: filteredBanks, type: "bank" },
+			{ icon: "🚗", label: "Accident Records", count: filteredAccidents.length, items: filteredAccidents, type: "accident" },
+			{ icon: "🚨", label: "Dial 112 Calls", count: filteredDial112.length, items: filteredDial112, type: "dial112" },
+		];
+
+		return (
+			<div className="space-y-4">
+				{/* Header with boundary name */}
+				<div className="bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 rounded-xl p-4">
+					<div className="flex items-center justify-between">
+						<div>
+							<div className="text-xs text-cyan-400 font-semibold uppercase tracking-wider mb-1">📍 Selected Area</div>
+							<h3 className="text-lg font-bold text-white">{selectedBoundary.name}</h3>
+						</div>
+						<button
+							onClick={() => {
+								setSelectedBoundary(null);
+								setSidebarActiveSection("layers");
+							}}
+							className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+							title="Close Area View"
+						>
+							<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+							</svg>
+						</button>
+					</div>
+				</div>
+
+				{/* Quick Stats */}
+				<div className="grid grid-cols-3 gap-2">
+					{categories.slice(0, 3).map((cat) => (
+						<div key={cat.type} className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
+							<div className="text-2xl mb-1">{cat.icon}</div>
+							<div className="text-lg font-bold text-white">{cat.count}</div>
+							<div className="text-[10px] text-gray-400 uppercase tracking-wider">{cat.label}</div>
+						</div>
+					))}
+				</div>
+
+				{/* Categories with expandable lists */}
+				<div className="space-y-2">
+					{categories.map((cat) => (
+						<details key={cat.type} className="group bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden">
+							<summary className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-colors list-none">
+								<div className="flex items-center gap-3">
+									<span className="text-xl">{cat.icon}</span>
+									<div>
+										<span className="text-sm font-medium text-gray-200">{cat.label}</span>
+										<span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+											{cat.count}
+										</span>
+									</div>
+								</div>
+								<svg
+									className="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+								</svg>
+							</summary>
+							<div className="p-2 border-t border-white/5 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
+								{cat.count === 0 ? (
+									<p className="text-xs text-gray-500 text-center py-3">No {cat.label.toLowerCase()} found in this area</p>
+								) : (
+									<div className="space-y-1">
+										{cat.items.slice(0, 20).map((item: any, idx: number) => (
+											<button
+												key={idx}
+												onClick={() => {
+													const lat = typeof item.latitude === 'string' ? parseFloat(item.latitude) : (item.latitude ?? item.lat);
+													const lng = typeof item.longitude === 'string' ? parseFloat(item.longitude) : (item.longitude ?? item.lng);
+													if (lat && lng) {
+														setSelectedPoint({ lat, lng, zoom: 16 });
+														setClickedPoint({
+															lat,
+															lng,
+															title: item.name || item.hospital_name || item.bank_name || item.callType || `${cat.label} #${idx + 1}`,
+															group: cat.label,
+														});
+													}
+												}}
+												className="w-full text-left p-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-cyan-500/20 transition-all text-xs"
+											>
+												<div className="font-medium text-gray-200 truncate">
+													{item.name || item.hospital_name || item.bank_name || item.callType || `${cat.label} #${idx + 1}`}
+												</div>
+												{item.address && (
+													<div className="text-gray-500 truncate mt-0.5">{item.address}</div>
+												)}
+											</button>
+										))}
+										{cat.count > 20 && (
+											<p className="text-[10px] text-gray-500 text-center py-1">
+												Showing 20 of {cat.count} results
+											</p>
+										)}
+									</div>
+								)}
+							</div>
+						</details>
+					))}
+				</div>
+
+				{/* Zoom to area button */}
+				<button
+					onClick={() => {
+						// Calculate center of the boundary polygon
+						const coords = selectedBoundary.coordinates;
+						const avgLat = coords.reduce((sum, c) => sum + c.lat, 0) / coords.length;
+						const avgLng = coords.reduce((sum, c) => sum + c.lng, 0) / coords.length;
+						setSelectedPoint({ lat: avgLat, lng: avgLng, zoom: 13 });
+					}}
+					className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+				>
+					<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+					</svg>
+					Zoom to {selectedBoundary.name}
+				</button>
+			</div>
+		);
+	}, [selectedBoundary, policeLocations, hospitalLocations, atmLocations, bankLocations, accidentAllRecords, dial112AllCalls]);
 	// Debug logging for render props
 	console.log("🗺️ Page: Rendering with current state:", {
 		kmlLayerConfig,
@@ -2439,13 +2615,20 @@ export default function Home() {
 
 			<Sidebar
 				onActiveSectionChange={(sectionId) => {
+					setSidebarActiveSection(sectionId);
 					const isOfficersPanel = sectionId === "officers";
 					setOfficerPanelActive(isOfficersPanel);
 					// Fetch officers when panel is first opened if not already loaded
 					if (isOfficersPanel && officerList.length === 0 && !officerLoading && fetchDutyOfficersRef.current) {
 						fetchDutyOfficersRef.current();
 					}
+					// Clear selected boundary if switching away from area view
+					if (sectionId !== "areaview") {
+						setSelectedBoundary(null);
+					}
 				}}
+				externalActiveSection={sidebarActiveSection}
+				areaViewContent={areaViewContent}
 				onSearch={handleSearch}
 				searchResults={searchResults}
 				onSearchResultClick={handleSearchResultClick}

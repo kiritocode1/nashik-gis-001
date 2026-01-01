@@ -159,6 +159,24 @@ const EmergencyIcon = ({ className }: { className?: string }) => (
 	</svg>
 );
 
+// Area View icon for boundary-specific exploration
+const AreaViewIcon = ({ className }: { className?: string }) => (
+	<svg
+		className={className}
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			strokeWidth={2}
+			d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+		/>
+		<circle cx="12" cy="10" r="3" strokeWidth={2} />
+	</svg>
+);
+
 // ... existing icons ...
 
 const sidebarSections = [
@@ -213,6 +231,12 @@ const sidebarSections = [
 		description: "Browse and toggle categories",
 	},
 	{
+		id: "areaview",
+		icon: AreaViewIcon,
+		title: "Area View",
+		description: "Explore selected boundary",
+	},
+	{
 		id: "chat",
 		icon: ChatIcon,
 		title: "AI Assistant",
@@ -234,11 +258,13 @@ export interface SidebarProps {
 	processionRoutes?: React.ReactNode;
 	settingsContent?: React.ReactNode;
 	officerTrackingContent?: React.ReactNode;
+	areaViewContent?: React.ReactNode; // New: Content for Area View tab
 	onActiveSectionChange?: (sectionId: string | null) => void;
 	onSearch?: (query: string) => void;
 	searchResults?: SearchResult[];
 	onSearchResultClick?: (result: SearchResult) => void;
 	isSearching?: boolean;
+	externalActiveSection?: string | null; // New: Allow external control of active section
 }
 
 // Helper component for Search Result Groups (Accordions)
@@ -329,11 +355,13 @@ export default function Sidebar({
 	emergencyContent, // Added
 	settingsContent,
 	officerTrackingContent,
+	areaViewContent, // New
 	onActiveSectionChange,
 	onSearch,
 	searchResults = [],
 	onSearchResultClick,
 	isSearching = false,
+	externalActiveSection, // New
 }: SidebarProps) {
 	const [isOpen, setIsOpen] = useState(true);
 	const [activeSection, setActiveSection] = useState<string | null>("layers");
@@ -341,6 +369,16 @@ export default function Sidebar({
 	const [showCoordinates, setShowCoordinates] = useState(false);
 	const [enableClustering, setEnableClustering] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
+
+	// Sync external active section
+	useEffect(() => {
+		if (externalActiveSection !== undefined && externalActiveSection !== activeSection) {
+			setActiveSection(externalActiveSection);
+			if (externalActiveSection && !isOpen) {
+				setIsOpen(true);
+			}
+		}
+	}, [externalActiveSection]);
 
 	const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const query = e.target.value;
@@ -620,6 +658,12 @@ export default function Sidebar({
 												</div>
 											)}
 										</div>
+									</div>
+								)}
+
+								{activeSection === "areaview" && (
+									<div className="flex-1 overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+										<div className="space-y-4">{areaViewContent}</div>
 									</div>
 								)}
 
