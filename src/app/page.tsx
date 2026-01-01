@@ -510,6 +510,23 @@ export default function Home() {
 	const [selectedBoundary, setSelectedBoundary] = useState<KMLFeature | null>(null);
 	const [sidebarActiveSection, setSidebarActiveSection] = useState<string | null>(null);
 
+	// Area-specific layer toggles (only show points within selected boundary)
+	const [areaLayerToggles, setAreaLayerToggles] = useState<Record<string | number, boolean>>({
+		dial112: false,
+		dial112Heatmap: false,
+		accidents: false,
+		accidentsHeatmap: false,
+		police: false,
+		policeHeatmap: false,
+		hospitals: false,
+		hospitalsHeatmap: false,
+		atms: false,
+		atmsHeatmap: false,
+		banks: false,
+		banksHeatmap: false,
+		cctv: false,
+	});
+
 	// State for absolute URLs (client-side only)
 	const [kmlAbsoluteUrl, setKmlAbsoluteUrl] = useState("/kml/nashik_gramin.kml");
 
@@ -1601,10 +1618,18 @@ export default function Home() {
 		setAccidentRecords(filtered);
 	}, [accidentVisible, mapBounds, accidentAllRecords]);
 
+	// Refs to track loading/data state without causing effect re-runs
+	const categoryLoadingRef = useRef(categoryLoading);
+	const categoryDataRef = useRef(categoryData);
+	categoryLoadingRef.current = categoryLoading;
+	categoryDataRef.current = categoryData;
+
 	// Load category data when toggle is enabled (lazy loading)
 	useEffect(() => {
 		const loadCategoryData = async (categoryId: number) => {
-			if (!categoryToggles[categoryId] || categoryLoading[categoryId] || categoryData[categoryId]) {
+			const isEnabled = categoryToggles[categoryId] || areaLayerToggles[categoryId];
+			// Use refs to check current state without including in dependencies
+			if (!isEnabled || categoryLoadingRef.current[categoryId] || categoryDataRef.current[categoryId]) {
 				return;
 			}
 
@@ -1624,11 +1649,12 @@ export default function Home() {
 
 		// Load data for all enabled categories
 		categories.forEach((category) => {
-			if (categoryToggles[category.id]) {
+			if (categoryToggles[category.id] || areaLayerToggles[category.id]) {
 				loadCategoryData(category.id);
 			}
 		});
-	}, [categories, categoryToggles, categoryLoading, categoryData]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [categories, categoryToggles, areaLayerToggles]);
 
 	// KML Layer configuration
 	// Note: Google Maps KmlLayer requires absolute URLs, so we use window.location.origin
@@ -1654,244 +1680,307 @@ export default function Home() {
 
 	// Marker groups - only real data sources
 	const markerGroups = useMemo(
-		() => [
-			{
-				name: "Duty Officers",
-				color: "#22C55E",
-				visible: officerPanelActive && !officerLoading && officerList.length > 0,
-				markers:
-					officerPanelActive && !officerLoading && officerList.length > 0
-						? officerList.map((officer) => ({
-							position: { lat: officer.location.latitude, lng: officer.location.longitude },
-							title: officer.name,
-							label: "👮",
-							meta: { officerId: officer.officerId },
-						}))
-						: [],
-			},
-			{
-				name: "Search Selection",
-				color: "#FFFF00", // Yellow highlight
-				visible: true,
-				markers: clickedPoint ? [{
-					position: { lat: clickedPoint.lat, lng: clickedPoint.lng },
-					title: clickedPoint.title || "Selected Location",
-					label: "📍"
-				}] : []
-			},
-			{
-				name: "Dial 112 Calls",
-				color: "#EAB308", // Amber
-				visible: dial112Visible,
-				markers: dial112Calls.map((c) => ({
-					position: { lat: c.latitude, lng: c.longitude },
-					title: c.eventId || c.policeStation || "Dial 112 Call",
-					label: "112",
-				})),
-			},
-			// Real CCTV data from external API
-			{
-				name: "CCTV Cameras",
-				color: "#F97316", // Orange
-				visible: cctvLayerVisible,
-				markers: cctvLocations.map((cctv) => ({
-					position: {
-						lat: typeof cctv.latitude === "string" ? parseFloat(cctv.latitude) : cctv.latitude,
-						lng: typeof cctv.longitude === "string" ? parseFloat(cctv.longitude) : cctv.longitude,
-					},
-					title: cctv.name || cctv.location_name || `CCTV ${cctv.id}`,
-					label: cctv.is_working ? "🎥" : "📷",
-					extraData: {
-						address: cctv.address,
-						cameraType: cctv.camera_type,
-						isWorking: cctv.is_working,
-						ward: cctv.ward,
-						installationDate: cctv.installation_date,
-					},
-				})),
-			},
-			// ATM Locations
-			{
-				name: "ATM Locations",
-				color: "#86EFAC", // Light green
-				visible: atmLayerVisible,
-				markers: atmLocations.map((atm) => ({
-					position: {
-						lat: typeof atm.latitude === "string" ? parseFloat(atm.latitude) : atm.latitude,
-						lng: typeof atm.longitude === "string" ? parseFloat(atm.longitude) : atm.longitude,
-					},
-					title: atm.name || atm.bank_name || `ATM ${atm.id}`,
-					label: "🏧",
-					extraData: {
-						bankName: atm.bank_name,
-						address: atm.address,
-						isWorking: atm.is_working,
-						ward: atm.ward,
-					},
-				})),
-			},
-			// Bank Branches
-			{
-				name: "Bank Branches",
-				color: "#16A34A", // Dark green
-				visible: bankLayerVisible,
-				markers: bankLocations.map((bank) => ({
-					position: {
-						lat: typeof bank.latitude === "string" ? parseFloat(bank.latitude) : bank.latitude,
-						lng: typeof bank.longitude === "string" ? parseFloat(bank.longitude) : bank.longitude,
-					},
-					title: bank.name || bank.bank_name || `Bank ${bank.id}`,
-					label: "🏦",
-					extraData: {
-						bankName: bank.bank_name,
-						branchName: bank.branch_name,
-						address: bank.address,
-						ifscCode: bank.ifsc_code,
-						contactNumber: bank.contact_number,
-						isActive: bank.is_active,
-						ward: bank.ward,
-					},
-				})),
-			},
-			// Hospitals
-			{
-				name: "Hospitals",
-				color: "#FFFFFF", // White
-				visible: hospitalLayerVisible,
-				markers: hospitalLocations.map((hospital) => ({
-					position: {
-						lat: typeof hospital.latitude === "string" ? parseFloat(hospital.latitude) : hospital.latitude,
-						lng: typeof hospital.longitude === "string" ? parseFloat(hospital.longitude) : hospital.longitude,
-					},
-					title: hospital.name || hospital.hospital_name || `Hospital ${hospital.id}`,
-					label: "🏥",
-					extraData: {
-						hospitalName: hospital.hospital_name,
-						address: hospital.address,
-						contactNumber: hospital.contact_number,
-						phone: hospital.phone,
-						type: hospital.type,
-						specialties: hospital.specialties,
-						isActive: hospital.is_active,
-						ward: hospital.ward,
-					},
-				})),
-			},
-			// Police Stations
-			{
-				name: "Police Stations",
-				color: "#3B82F6", // Blue
-				visible: policeLayerVisible,
-				markers: policeLocations.map((police) => ({
-					position: {
-						lat: typeof police.latitude === "string" ? parseFloat(police.latitude) : police.latitude,
-						lng: typeof police.longitude === "string" ? parseFloat(police.longitude) : police.longitude,
-					},
-					title: police.name || `Police Station ${police.id}`,
-					label: "🚔",
-					extraData: {
-						policeName: police.name,
-						address: police.address,
-						description: police.description,
-						status: police.status,
-						verifiedBy: police.verified_by,
-						verifiedAt: police.verified_at,
-						imageUrl: police.image_url,
-						userName: police.user_name,
-						categoryName: police.category_name,
-						categoryColor: police.category_color,
-					},
-				})),
-			},
-			// Accident data from CSV
-			{
-				name: "Accident Records",
-				color: "#EF4444", // Red
-				visible: accidentVisible,
-				markers: (() => {
-					console.log(`🚗 Creating ${accidentRecords.length} accident markers`);
-					return accidentRecords.map((accident) => {
-						console.log("🚗 Creating accident marker:", accident);
-						return {
-							position: { lat: accident.latitude, lng: accident.longitude },
-							title: `Accident ${accident.srNo} - ${accident.accidentCount} accidents`,
-							label: "🚗",
-							extraData: {
-								state: accident.state,
-								district: accident.district,
-								accidentCount: accident.accidentCount,
-								allIndiaRank: accident.allIndiaRank,
-								gridId: accident.gridId,
-								ambulance: accident.ambulance,
-							},
-						};
-					});
-				})(),
-			},
-			// Dynamic categories from API
-			...categories
-				.filter((category) => categoryToggles[category.id])
-				.map((category) => {
-					const points = categoryData[category.id] || [];
-					// Filter by active subcategories if any are enabled
-					const activeSubcats = Object.entries(subcategoryToggles[category.id] || {})
-						.filter(([, enabled]) => enabled)
-						.map(([subcatId]) => parseInt(subcatId));
+		() => {
+			// Helper to filter points within selected boundary
+			const filterByBoundary = <T extends { latitude?: number | string; lng?: number; lat?: number; longitude?: number | string }>(items: T[], dataName: string): T[] => {
+				if (!selectedBoundary) return items;
+				const filtered = items.filter(item => {
+					const lat = typeof item.latitude === 'string' ? parseFloat(item.latitude) : (item.latitude ?? (item as any).lat);
+					const lng = typeof item.longitude === 'string' ? parseFloat(item.longitude) : (item.longitude ?? (item as any).lng);
+					if (lat === undefined || lng === undefined || isNaN(lat) || isNaN(lng)) return false;
+					return isPointInPolygon({ lat, lng }, selectedBoundary.coordinates);
+				});
+				console.log(`🔍 filterByBoundary [${dataName}]: ${items.length} → ${filtered.length} (boundary: ${selectedBoundary.name}, coords: ${selectedBoundary.coordinates.length} points)`);
+				return filtered;
+			};
 
-					let filteredPoints = points;
-					if (activeSubcats.length > 0) {
-						filteredPoints = points.filter((point) => activeSubcats.includes(point.subcategory_id));
-					}
+			// Determine visibility - use area toggles if boundary selected, otherwise use normal toggles
+			const isAreaMode = !!selectedBoundary;
+			const getDial112Visibility = () => isAreaMode ? !!areaLayerToggles.dial112 : dial112Visible;
+			const getAccidentVisibility = () => isAreaMode ? !!areaLayerToggles.accidents : accidentVisible;
+			const getPoliceVisibility = () => isAreaMode ? !!areaLayerToggles.police : policeLayerVisible;
+			const getHospitalVisibility = () => isAreaMode ? !!areaLayerToggles.hospitals : hospitalLayerVisible;
+			const getAtmVisibility = () => isAreaMode ? !!areaLayerToggles.atms : atmLayerVisible;
+			const getBankVisibility = () => isAreaMode ? !!areaLayerToggles.banks : bankLayerVisible;
+			const getCctvVisibility = () => isAreaMode ? !!areaLayerToggles.cctv : cctvLayerVisible;
 
-					// Apply viewport filtering and zoom-based decimation like Dial 112
-					if (mapBounds) {
-						const { north, south, east, west, zoom } = mapBounds;
-						let skipFactor = 1;
-						if (zoom < 10) skipFactor = 50;
-						else if (zoom < 12) skipFactor = 20;
-						else if (zoom < 14) skipFactor = 10;
-						else if (zoom < 16) skipFactor = 5;
+			// Debug: log area mode state
+			if (isAreaMode) {
+				console.log('📍 AREA MODE ACTIVE:', {
+					boundaryName: selectedBoundary?.name,
+					boundaryCoords: selectedBoundary?.coordinates?.length,
+					areaLayerToggles,
+					dial112AllCallsCount: dial112AllCalls.length,
+					accidentAllRecordsCount: accidentAllRecords.length,
+				});
+			}
 
-						// First filter by viewport
-						filteredPoints = filteredPoints.filter((point) => {
-							const lat = typeof point.latitude === "string" ? parseFloat(point.latitude) : parseFloat(String(point.latitude));
-							const lng = typeof point.longitude === "string" ? parseFloat(point.longitude) : parseFloat(String(point.longitude));
-							return lat >= south && lat <= north && lng >= west && lng <= east;
+			// Filter data if in area mode - use ALL data sources to bypass viewport filtering
+			const filteredDial112 = isAreaMode ? filterByBoundary(dial112AllCalls, 'dial112') : dial112Calls;
+			const filteredAccidents = isAreaMode ? filterByBoundary(accidentAllRecords, 'accidents') : accidentRecords;
+			const filteredPolice = isAreaMode ? filterByBoundary(policeLocations, 'police') : policeLocations;
+			const filteredHospitals = isAreaMode ? filterByBoundary(hospitalLocations, 'hospitals') : hospitalLocations;
+			const filteredAtms = isAreaMode ? filterByBoundary(atmLocations, 'atms') : atmLocations;
+			const filteredBanks = isAreaMode ? filterByBoundary(bankLocations, 'banks') : bankLocations;
+			const filteredCctv = isAreaMode ? filterByBoundary(cctvLocations, 'cctv') : cctvLocations;
+
+			// Debug: log visibility states
+			if (isAreaMode) {
+				console.log('📊 AREA VISIBILITY:', {
+					dial112: { visible: getDial112Visibility(), count: filteredDial112.length },
+					accidents: { visible: getAccidentVisibility(), count: filteredAccidents.length },
+					police: { visible: getPoliceVisibility(), count: filteredPolice.length },
+				});
+			}
+
+			return [
+				{
+					name: "Duty Officers",
+					color: "#22C55E",
+					visible: officerPanelActive && !officerLoading && officerList.length > 0,
+					markers:
+						officerPanelActive && !officerLoading && officerList.length > 0
+							? officerList.map((officer) => ({
+								position: { lat: officer.location.latitude, lng: officer.location.longitude },
+								title: officer.name,
+								label: "👮",
+								meta: { officerId: officer.officerId },
+							}))
+							: [],
+				},
+				{
+					name: "Search Selection",
+					color: "#FFFF00", // Yellow highlight
+					visible: true,
+					markers: clickedPoint ? [{
+						position: { lat: clickedPoint.lat, lng: clickedPoint.lng },
+						title: clickedPoint.title || "Selected Location",
+						label: "📍"
+					}] : []
+				},
+				{
+					name: "Dial 112 Calls",
+					color: "#EAB308", // Amber
+					visible: getDial112Visibility(),
+					markers: filteredDial112.map((c) => ({
+						position: { lat: c.latitude, lng: c.longitude },
+						title: c.eventId || c.policeStation || "Dial 112 Call",
+						label: "112",
+					})),
+				},
+				// Real CCTV data from external API
+				{
+					name: "CCTV Cameras",
+					color: "#F97316", // Orange
+					visible: getCctvVisibility(),
+					markers: filteredCctv.map((cctv) => ({
+						position: {
+							lat: typeof cctv.latitude === "string" ? parseFloat(cctv.latitude) : cctv.latitude,
+							lng: typeof cctv.longitude === "string" ? parseFloat(cctv.longitude) : cctv.longitude,
+						},
+						title: cctv.name || cctv.location_name || `CCTV ${cctv.id}`,
+						label: cctv.is_working ? "🎥" : "📷",
+						extraData: {
+							address: cctv.address,
+							cameraType: cctv.camera_type,
+							isWorking: cctv.is_working,
+							ward: cctv.ward,
+							installationDate: cctv.installation_date,
+						},
+					})),
+				},
+				// ATM Locations
+				{
+					name: "ATM Locations",
+					color: "#86EFAC", // Light green
+					visible: getAtmVisibility(),
+					markers: filteredAtms.map((atm) => ({
+						position: {
+							lat: typeof atm.latitude === "string" ? parseFloat(atm.latitude) : atm.latitude,
+							lng: typeof atm.longitude === "string" ? parseFloat(atm.longitude) : atm.longitude,
+						},
+						title: atm.name || atm.bank_name || `ATM ${atm.id}`,
+						label: "🏧",
+						extraData: {
+							bankName: atm.bank_name,
+							address: atm.address,
+							isWorking: atm.is_working,
+							ward: atm.ward,
+						},
+					})),
+				},
+				// Bank Branches
+				{
+					name: "Bank Branches",
+					color: "#16A34A", // Dark green
+					visible: getBankVisibility(),
+					markers: filteredBanks.map((bank) => ({
+						position: {
+							lat: typeof bank.latitude === "string" ? parseFloat(bank.latitude) : bank.latitude,
+							lng: typeof bank.longitude === "string" ? parseFloat(bank.longitude) : bank.longitude,
+						},
+						title: bank.name || bank.bank_name || `Bank ${bank.id}`,
+						label: "🏦",
+						extraData: {
+							bankName: bank.bank_name,
+							branchName: bank.branch_name,
+							address: bank.address,
+							ifscCode: bank.ifsc_code,
+							contactNumber: bank.contact_number,
+							isActive: bank.is_active,
+							ward: bank.ward,
+						},
+					})),
+				},
+				// Hospitals
+				{
+					name: "Hospitals",
+					color: "#FFFFFF", // White
+					visible: getHospitalVisibility(),
+					markers: filteredHospitals.map((hospital) => ({
+						position: {
+							lat: typeof hospital.latitude === "string" ? parseFloat(hospital.latitude) : hospital.latitude,
+							lng: typeof hospital.longitude === "string" ? parseFloat(hospital.longitude) : hospital.longitude,
+						},
+						title: hospital.name || hospital.hospital_name || `Hospital ${hospital.id}`,
+						label: "🏥",
+						extraData: {
+							hospitalName: hospital.hospital_name,
+							address: hospital.address,
+							contactNumber: hospital.contact_number,
+							phone: hospital.phone,
+							type: hospital.type,
+							specialties: hospital.specialties,
+							isActive: hospital.is_active,
+							ward: hospital.ward,
+						},
+					})),
+				},
+				// Police Stations
+				{
+					name: "Police Stations",
+					color: "#3B82F6", // Blue
+					visible: getPoliceVisibility(),
+					markers: filteredPolice.map((police) => ({
+						position: {
+							lat: typeof police.latitude === "string" ? parseFloat(police.latitude) : police.latitude,
+							lng: typeof police.longitude === "string" ? parseFloat(police.longitude) : police.longitude,
+						},
+						title: police.name || `Police Station ${police.id}`,
+						label: "🚔",
+						extraData: {
+							policeName: police.name,
+							address: police.address,
+							description: police.description,
+							status: police.status,
+							verifiedBy: police.verified_by,
+							verifiedAt: police.verified_at,
+							imageUrl: police.image_url,
+							userName: police.user_name,
+							categoryName: police.category_name,
+							categoryColor: police.category_color,
+						},
+					})),
+				},
+				// Accident data from CSV
+				{
+					name: "Accident Records",
+					color: "#EF4444", // Red
+					visible: getAccidentVisibility(),
+					markers: (() => {
+						console.log(`🚗 Creating ${filteredAccidents.length} accident markers`);
+						return filteredAccidents.map((accident) => {
+							console.log("🚗 Creating accident marker:", accident);
+							return {
+								position: { lat: accident.latitude, lng: accident.longitude },
+								title: `Accident ${accident.srNo} - ${accident.accidentCount} accidents`,
+								label: "🚗",
+								extraData: {
+									state: accident.state,
+									district: accident.district,
+									accidentCount: accident.accidentCount,
+									allIndiaRank: accident.allIndiaRank,
+									gridId: accident.gridId,
+									ambulance: accident.ambulance,
+								},
+							};
 						});
+					})(),
+				},
+				// Dynamic categories from API
+				...categories
+					.filter((category) => {
+						// In area mode, use area toggles. Otherwise use normal category toggles.
+						return isAreaMode ? areaLayerToggles[category.id] : categoryToggles[category.id];
+					})
+					.map((category) => {
+						const points = categoryData[category.id] || [];
+						// Filter by boundary if in area mode
+						const areaPoints = isAreaMode ? filterByBoundary(points, category.name) : points;
 
-						// Then apply decimation by zoom
-						filteredPoints = filteredPoints.filter((_, index) => index % skipFactor === 0);
-					}
+						// Filter by active subcategories if any are enabled
+						const activeSubcats = Object.entries(subcategoryToggles[category.id] || {})
+							.filter(([, enabled]) => enabled)
+							.map(([subcatId]) => parseInt(subcatId));
 
-					return {
-						name: category.name,
-						color: category.color || "#888888",
-						visible: true,
-						markers: filteredPoints.map((point) => ({
-							position: {
-								lat: typeof point.latitude === "string" ? parseFloat(point.latitude) : parseFloat(String(point.latitude)),
-								lng: typeof point.longitude === "string" ? parseFloat(point.longitude) : parseFloat(String(point.longitude)),
-							},
-							title: point.name,
-							label: category.icon,
-							extraData: {
-								description: point.description,
-								address: point.address,
-								categoryName: point.category_name,
-								categoryColor: point.category_color,
-								status: point.status,
-								createdAt: point.created_at,
-							},
-						})),
-					};
-				}),
-		],
+						let filteredPoints = areaPoints;
+						if (activeSubcats.length > 0) {
+							filteredPoints = areaPoints.filter((point) => activeSubcats.includes(point.subcategory_id));
+						}
+
+						// Apply viewport filtering and zoom-based decimation
+						if (mapBounds) {
+							const { north, south, east, west, zoom } = mapBounds;
+							let skipFactor = 1;
+							if (zoom < 10) skipFactor = 50;
+							else if (zoom < 12) skipFactor = 20;
+							else if (zoom < 14) skipFactor = 10;
+							else if (zoom < 16) skipFactor = 5;
+
+							// First filter by viewport (only if not already filtered by boundary)
+							if (!isAreaMode) {
+								filteredPoints = filteredPoints.filter((point) => {
+									const lat = typeof point.latitude === "string" ? parseFloat(point.latitude) : parseFloat(String(point.latitude));
+									const lng = typeof point.longitude === "string" ? parseFloat(point.longitude) : parseFloat(String(point.longitude));
+									return lat >= south && lat <= north && lng >= west && lng <= east;
+								});
+
+								// Then apply decimation by zoom (only in non-area mode)
+								filteredPoints = filteredPoints.filter((_, index) => index % skipFactor === 0);
+							}
+						}
+
+						return {
+							name: category.name,
+							color: category.color || "#888888",
+							visible: true,
+							markers: filteredPoints.map((point) => ({
+								position: {
+									lat: typeof point.latitude === "string" ? parseFloat(point.latitude) : parseFloat(String(point.latitude)),
+									lng: typeof point.longitude === "string" ? parseFloat(point.longitude) : parseFloat(String(point.longitude)),
+								},
+								title: point.name,
+								label: category.icon,
+								extraData: {
+									description: point.description,
+									address: point.address,
+									categoryName: point.category_name,
+									categoryColor: point.category_color,
+									status: point.status,
+									createdAt: point.created_at,
+								},
+							})),
+						};
+					}),
+			]
+		},
 		[
 			officerPanelActive,
 			officerLoading,
 			officerList,
 			dial112Visible,
 			dial112Calls,
+			dial112AllCalls,
 			cctvLayerVisible,
 			cctvLocations,
 			atmLayerVisible,
@@ -1904,11 +1993,15 @@ export default function Home() {
 			policeLocations,
 			accidentVisible,
 			accidentRecords,
+			accidentAllRecords,
 			categories,
 			categoryToggles,
 			subcategoryToggles,
 			categoryData,
 			mapBounds,
+			selectedBoundary,
+			areaLayerToggles,
+			clickedPoint,
 		],
 	);
 
@@ -2426,7 +2519,7 @@ export default function Home() {
 	// 	}
 	// };
 
-	// Area View Content - shows filtered data for selected boundary
+	// Area View Content - shows filtered data for selected boundary with toggle controls
 	const areaViewContent = useMemo(() => {
 		if (!selectedBoundary) {
 			return (
@@ -2450,38 +2543,108 @@ export default function Home() {
 			});
 		};
 
+		// Debug: Log data counts
+		console.log('🔍 AREA VIEW DATA DEBUG:', {
+			boundaryName: selectedBoundary.name,
+			boundaryCoordCount: selectedBoundary.coordinates?.length,
+			firstCoord: selectedBoundary.coordinates?.[0],
+			rawCounts: {
+				dial112AllCalls: dial112AllCalls.length,
+				accidentAllRecords: accidentAllRecords.length,
+				policeLocations: policeLocations.length,
+				hospitalLocations: hospitalLocations.length,
+				atmLocations: atmLocations.length,
+				bankLocations: bankLocations.length,
+				cctvLocations: cctvLocations.length,
+			}
+		});
+
 		const filteredPolice = filterInBoundary(policeLocations);
 		const filteredHospitals = filterInBoundary(hospitalLocations);
 		const filteredAtms = filterInBoundary(atmLocations);
 		const filteredBanks = filterInBoundary(bankLocations);
 		const filteredAccidents = filterInBoundary(accidentAllRecords);
 		const filteredDial112 = filterInBoundary(dial112AllCalls);
+		const filteredCctv = filterInBoundary(cctvLocations);
 
-		const categories = [
-			{ icon: "🚔", label: "Police Stations", count: filteredPolice.length, items: filteredPolice, type: "police" },
-			{ icon: "🏥", label: "Hospitals", count: filteredHospitals.length, items: filteredHospitals, type: "hospital" },
-			{ icon: "🏧", label: "ATMs", count: filteredAtms.length, items: filteredAtms, type: "atm" },
-			{ icon: "🏦", label: "Banks", count: filteredBanks.length, items: filteredBanks, type: "bank" },
-			{ icon: "🚗", label: "Accident Records", count: filteredAccidents.length, items: filteredAccidents, type: "accident" },
-			{ icon: "🚨", label: "Dial 112 Calls", count: filteredDial112.length, items: filteredDial112, type: "dial112" },
+		// Debug: Log filtered counts
+		console.log('📊 AREA VIEW FILTERED COUNTS:', {
+			filteredDial112: filteredDial112.length,
+			filteredAccidents: filteredAccidents.length,
+			filteredPolice: filteredPolice.length,
+			filteredHospitals: filteredHospitals.length,
+		});
+
+		// If dial112 has data but filtered is 0, log a sample point for debugging
+		if (dial112AllCalls.length > 0 && filteredDial112.length === 0) {
+			const samplePoint = dial112AllCalls[0];
+			console.log('⚠️ DIAL112 SAMPLE POINT (not matching boundary):', {
+				lat: samplePoint.latitude,
+				lng: samplePoint.longitude,
+				boundaryFirstCoord: selectedBoundary.coordinates?.[0],
+				boundaryLastCoord: selectedBoundary.coordinates?.[selectedBoundary.coordinates.length - 1],
+			});
+		}
+
+		// Layer definitions for core layers
+		const coreLayers = [
+			{ key: 'dial112' as const, icon: '🚨', label: 'Dial 112 Points' },
+			{ key: 'dial112Heatmap' as const, icon: '🔥', label: 'Dial 112 Heatmap' },
+			{ key: 'accidents' as const, icon: '🚗', label: 'Accident Points' },
+			{ key: 'accidentsHeatmap' as const, icon: '🔥', label: 'Accident Heatmap' },
+			{ key: 'police' as const, icon: '🚔', label: 'Police Stations' },
+			{ key: 'hospitals' as const, icon: '🏥', label: 'Hospitals' },
+			{ key: 'atms' as const, icon: '🏧', label: 'ATMs' },
+			{ key: 'banks' as const, icon: '🏦', label: 'Banks' },
+			{ key: 'cctv' as const, icon: '🎥', label: 'CCTV Cameras' },
 		];
 
+		// Combine all layers and calculate counts
+		const allLayers = coreLayers.map(layer => {
+			let count = 0;
+			if (layer.key === 'dial112') count = filteredDial112.length;
+			else if (layer.key === 'accidents') count = filteredAccidents.length;
+			else if (layer.key === 'police') count = filteredPolice.length;
+			else if (layer.key === 'hospitals') count = filteredHospitals.length;
+			else if (layer.key === 'atms') count = filteredAtms.length;
+			else if (layer.key === 'banks') count = filteredBanks.length;
+			else if (layer.key === 'cctv') count = filteredCctv.length;
+			// Heatmaps use the same filtered data counts effectively
+			else if (layer.key === 'dial112Heatmap') count = filteredDial112.length;
+			else if (layer.key === 'accidentsHeatmap') count = filteredAccidents.length;
+
+			return { ...layer, count };
+		});
+
+		// Dynamic layer definitions from categories state
+		const dynamicLayers = categories.map(cat => ({
+			key: cat.id,
+			icon: cat.icon || '📌',
+			label: cat.name,
+			count: filterInBoundary(categoryData[cat.id] || []).length
+		}));
+
+		const fullLayerList = [...allLayers, ...dynamicLayers];
+
 		return (
-			<div className="space-y-4">
+			<div className="flex flex-col h-full">
 				{/* Header with boundary name */}
-				<div className="bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 rounded-xl p-4">
+				<div className="bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-500/30 rounded-xl p-4 mb-4">
 					<div className="flex items-center justify-between">
 						<div>
 							<div className="text-xs text-cyan-400 font-semibold uppercase tracking-wider mb-1">📍 Selected Area</div>
-							<h3 className="text-lg font-bold text-white">{selectedBoundary.name}</h3>
+							<h3 className="text-lg font-bold text-white leading-tight">{selectedBoundary.name}</h3>
 						</div>
 						<button
 							onClick={() => {
 								setSelectedBoundary(null);
 								setSidebarActiveSection("layers");
+								setAreaLayerToggles({
+									dial112: false, accidents: false, police: false,
+									hospitals: false, atms: false, banks: false, cctv: false
+								});
 							}}
 							className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
-							title="Close Area View"
 						>
 							<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -2490,102 +2653,61 @@ export default function Home() {
 					</div>
 				</div>
 
-				{/* Quick Stats */}
-				<div className="grid grid-cols-3 gap-2">
-					{categories.slice(0, 3).map((cat) => (
-						<div key={cat.type} className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
-							<div className="text-2xl mb-1">{cat.icon}</div>
-							<div className="text-lg font-bold text-white">{cat.count}</div>
-							<div className="text-[10px] text-gray-400 uppercase tracking-wider">{cat.label}</div>
-						</div>
-					))}
-				</div>
-
-				{/* Categories with expandable lists */}
-				<div className="space-y-2">
-					{categories.map((cat) => (
-						<details key={cat.type} className="group bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden">
-							<summary className="flex items-center justify-between p-3 cursor-pointer hover:bg-white/5 transition-colors list-none">
-								<div className="flex items-center gap-3">
-									<span className="text-xl">{cat.icon}</span>
-									<div>
-										<span className="text-sm font-medium text-gray-200">{cat.label}</span>
-										<span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
-											{cat.count}
-										</span>
-									</div>
-								</div>
-								<svg
-									className="w-4 h-4 text-gray-400 transition-transform group-open:rotate-180"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-								</svg>
-							</summary>
-							<div className="p-2 border-t border-white/5 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10">
-								{cat.count === 0 ? (
-									<p className="text-xs text-gray-500 text-center py-3">No {cat.label.toLowerCase()} found in this area</p>
-								) : (
-									<div className="space-y-1">
-										{cat.items.slice(0, 20).map((item: any, idx: number) => (
-											<button
-												key={idx}
-												onClick={() => {
-													const lat = typeof item.latitude === 'string' ? parseFloat(item.latitude) : (item.latitude ?? item.lat);
-													const lng = typeof item.longitude === 'string' ? parseFloat(item.longitude) : (item.longitude ?? item.lng);
-													if (lat && lng) {
-														setSelectedPoint({ lat, lng, zoom: 16 });
-														setClickedPoint({
-															lat,
-															lng,
-															title: item.name || item.hospital_name || item.bank_name || item.callType || `${cat.label} #${idx + 1}`,
-															group: cat.label,
-														});
-													}
-												}}
-												className="w-full text-left p-2 rounded-lg bg-white/[0.02] hover:bg-white/[0.06] border border-white/5 hover:border-cyan-500/20 transition-all text-xs"
-											>
-												<div className="font-medium text-gray-200 truncate">
-													{item.name || item.hospital_name || item.bank_name || item.callType || `${cat.label} #${idx + 1}`}
-												</div>
-												{item.address && (
-													<div className="text-gray-500 truncate mt-0.5">{item.address}</div>
-												)}
-											</button>
-										))}
-										{cat.count > 20 && (
-											<p className="text-[10px] text-gray-500 text-center py-1">
-												Showing 20 of {cat.count} results
-											</p>
-										)}
-									</div>
-								)}
-							</div>
-						</details>
-					))}
-				</div>
-
-				{/* Zoom to area button */}
 				<button
 					onClick={() => {
-						// Calculate center of the boundary polygon
 						const coords = selectedBoundary.coordinates;
 						const avgLat = coords.reduce((sum, c) => sum + c.lat, 0) / coords.length;
 						const avgLng = coords.reduce((sum, c) => sum + c.lng, 0) / coords.length;
 						setSelectedPoint({ lat: avgLat, lng: avgLng, zoom: 13 });
 					}}
-					className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+					className="w-full py-2.5 mb-6 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-medium rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-cyan-900/20"
 				>
 					<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
 					</svg>
-					Zoom to {selectedBoundary.name}
+					Zoom to Area
 				</button>
+
+				<div className="space-y-3 flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+					<div className="flex items-center justify-between mb-2">
+						<h3 className="text-sm font-medium text-gray-300">Area Layers</h3>
+						<span className="text-[10px] bg-white/5 px-2 py-1 rounded text-gray-500 uppercase tracking-widest">Filters Active</span>
+					</div>
+
+					<div className="space-y-2 pb-10">
+						{fullLayerList.map((layer) => (
+							<div key={layer.key} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all duration-200 group">
+								<div className="flex items-center gap-3">
+									<span className="text-xl group-hover:scale-110 transition-transform">{layer.icon}</span>
+									<div>
+										<div className="flex items-center gap-2">
+											<span className="text-sm font-medium text-gray-200">{layer.label}</span>
+											{areaLayerToggles[layer.key] && (
+												<span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+											)}
+										</div>
+										<p className="text-xs text-gray-400 mt-0.5">
+											{layer.count} {layer.count === 1 ? 'location' : 'locations'}
+										</p>
+									</div>
+								</div>
+								<SliderV1
+									checked={!!areaLayerToggles[layer.key]}
+									onChange={(checked) => {
+										setAreaLayerToggles(prev => ({
+											...prev,
+											[layer.key]: checked
+										}));
+									}}
+									id={`area-layer-${layer.key}`}
+								/>
+							</div>
+						))}
+					</div>
+				</div>
 			</div>
 		);
-	}, [selectedBoundary, policeLocations, hospitalLocations, atmLocations, bankLocations, accidentAllRecords, dial112AllCalls]);
+	}, [selectedBoundary, policeLocations, hospitalLocations, atmLocations, bankLocations, accidentAllRecords, dial112AllCalls, cctvLocations, areaLayerToggles, categories, categoryData]);
 	// Debug logging for render props
 	console.log("🗺️ Page: Rendering with current state:", {
 		kmlLayerConfig,
@@ -3265,14 +3387,34 @@ export default function Home() {
 					polylines={processedProcessionRoutes}
 					heatmap={{
 						data: [
-							...(dial112HeatmapVisible ? dial112HeatmapData.data : []),
-							...(accidentHeatmapVisible ? accidentHeatmapData.data : []),
-							...(atmHeatmapVisible ? atmHeatmapData.data : []),
-							...(bankHeatmapVisible ? bankHeatmapData.data : []),
-							...(hospitalHeatmapVisible ? hospitalHeatmapData.data : []),
-							...(policeHeatmapVisible ? policeHeatmapData.data : []),
+							...(selectedBoundary
+								? (areaLayerToggles.dial112Heatmap ? dial112HeatmapData.data.filter(d => isPointInPolygon(d.position, selectedBoundary.coordinates)) : [])
+								: (dial112HeatmapVisible ? dial112HeatmapData.data : [])
+							),
+							...(selectedBoundary
+								? (areaLayerToggles.accidentsHeatmap ? accidentHeatmapData.data.filter(d => isPointInPolygon(d.position, selectedBoundary.coordinates)) : [])
+								: (accidentHeatmapVisible ? accidentHeatmapData.data : [])
+							),
+							...(selectedBoundary
+								? (areaLayerToggles.atmHeatmap ? atmHeatmapData.data.filter(d => isPointInPolygon(d.position, selectedBoundary.coordinates)) : [])
+								: (atmHeatmapVisible ? atmHeatmapData.data : [])
+							),
+							...(selectedBoundary
+								? (areaLayerToggles.bankHeatmap ? bankHeatmapData.data.filter(d => isPointInPolygon(d.position, selectedBoundary.coordinates)) : [])
+								: (bankHeatmapVisible ? bankHeatmapData.data : [])
+							),
+							...(selectedBoundary
+								? (areaLayerToggles.hospitalHeatmap ? hospitalHeatmapData.data.filter(d => isPointInPolygon(d.position, selectedBoundary.coordinates)) : [])
+								: (hospitalHeatmapVisible ? hospitalHeatmapData.data : [])
+							),
+							...(selectedBoundary
+								? (areaLayerToggles.policeHeatmap ? policeHeatmapData.data.filter(d => isPointInPolygon(d.position, selectedBoundary.coordinates)) : [])
+								: (policeHeatmapVisible ? policeHeatmapData.data : [])
+							),
 						],
-						visible: dial112HeatmapVisible || accidentHeatmapVisible || atmHeatmapVisible || bankHeatmapVisible || hospitalHeatmapVisible || policeHeatmapVisible,
+						visible: selectedBoundary
+							? (areaLayerToggles.dial112Heatmap || areaLayerToggles.accidentsHeatmap || areaLayerToggles.atmHeatmap || areaLayerToggles.bankHeatmap || areaLayerToggles.hospitalHeatmap || areaLayerToggles.policeHeatmap)
+							: (dial112HeatmapVisible || accidentHeatmapVisible || atmHeatmapVisible || bankHeatmapVisible || hospitalHeatmapVisible || policeHeatmapVisible),
 						radius: 20,
 						opacity: 0.6,
 						gradient: dial112HeatmapVisible
