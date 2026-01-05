@@ -1432,10 +1432,10 @@ export default function Home() {
 	// Load Police Station data when toggle is enabled
 	useEffect(() => {
 		const loadPoliceData = async () => {
-			if (policeLayerVisible && policeLocations.length === 0 && !policeLoading) {
+			if ((policeLayerVisible || areaLayerToggles.police) && policeLocations.length === 0 && !policeLoading) {
 				setPoliceLoading(true);
 				try {
-					console.log("🚔 Loading Police Station data...");
+					console.log("🚔 Loading Police Station data... [Trigger: Main or Area]", { main: policeLayerVisible, area: areaLayerToggles.police });
 					const data = await fetchMapData();
 					const policeStations = data.data_points.filter((item: MapDataPoint) => item.category_name === "पोलीस आस्थापना");
 					setPoliceLocations(policeStations);
@@ -1449,7 +1449,7 @@ export default function Home() {
 		};
 
 		loadPoliceData();
-	}, [policeLayerVisible, policeLocations.length, policeLoading]);
+	}, [policeLayerVisible, areaLayerToggles.police, policeLocations.length, policeLoading]);
 
 	// Load Procession Routes data when any festival toggle is enabled
 	useEffect(() => {
@@ -1491,8 +1491,11 @@ export default function Home() {
 			rafHandle = null;
 		};
 
-		if ((dial112Visible || dial112HeatmapVisible) && !dial112LoadingRef.current) {
-			console.log("🚨 Starting Dial 112 SSE stream subscription...");
+		if ((dial112Visible || dial112HeatmapVisible || areaLayerToggles.dial112 || areaLayerToggles.dial112Heatmap) && !dial112LoadingRef.current) {
+			console.log("🚨 Starting Dial 112 SSE stream subscription... [Trigger: Main or Area]", {
+				main: dial112Visible || dial112HeatmapVisible,
+				area: areaLayerToggles.dial112 || areaLayerToggles.dial112Heatmap
+			});
 			dial112LoadingRef.current = true;
 			setDial112Loading(true);
 			setDial112AllCalls([]);
@@ -1520,7 +1523,7 @@ export default function Home() {
 			if (rafHandle !== null) cancelAnimationFrame(rafHandle);
 			// Let the SSE stream complete naturally
 		};
-	}, [dial112Visible, dial112HeatmapVisible]);
+	}, [dial112Visible, dial112HeatmapVisible, areaLayerToggles.dial112, areaLayerToggles.dial112Heatmap]);
 
 	// Load Accident data via SSE (cache all points, no rendering yet)
 	useEffect(() => {
@@ -1539,15 +1542,18 @@ export default function Home() {
 			rafHandle = null;
 		};
 
-		if ((accidentVisible || accidentHeatmapVisible) && !accidentLoadingRef.current) {
-			console.log("🚗 Starting Accident Data SSE stream subscription...");
+		if ((accidentVisible || accidentHeatmapVisible || areaLayerToggles.accidents || areaLayerToggles.accidentsHeatmap) && !accidentLoadingRef.current) {
+			console.log("🚗 Starting Accident Data SSE stream subscription... [Trigger: Main or Area]", {
+				main: accidentVisible || accidentHeatmapVisible,
+				area: areaLayerToggles.accidents || areaLayerToggles.accidentsHeatmap
+			});
 			accidentLoadingRef.current = true;
 			setAccidentLoading(true);
 			accumulatedRecords = [];
 			setAccidentAllRecords([]);
 			streamAccidentData(
 				(row) => {
-					console.log("🚗 Received accident row:", row);
+					// console.log("🚗 Received accident row:", row); // Sparse logging
 					buffer.push(row);
 					// Batch every 50 rows for caching (smaller batches for faster updates)
 					if (buffer.length >= 50) {
@@ -1570,7 +1576,7 @@ export default function Home() {
 			if (rafHandle !== null) cancelAnimationFrame(rafHandle);
 			// Let the SSE stream complete naturally
 		};
-	}, [accidentVisible, accidentHeatmapVisible]);
+	}, [accidentVisible, accidentHeatmapVisible, areaLayerToggles.accidents, areaLayerToggles.accidentsHeatmap]);
 
 	// Filter Dial 112 by viewport bounds AND zoom level (decimation)
 	useEffect(() => {
@@ -2728,6 +2734,7 @@ export default function Home() {
 								<SliderV1
 									checked={!!areaLayerToggles[layer.key]}
 									onChange={(checked) => {
+										console.log(`🔘 Toggling Area Layer ${layer.key} to ${checked}`);
 										setAreaLayerToggles(prev => ({
 											...prev,
 											[layer.key]: checked
