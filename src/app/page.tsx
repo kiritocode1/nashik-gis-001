@@ -2639,11 +2639,7 @@ export default function Home() {
 			{ key: 'dial112Heatmap' as const, icon: '🔥', label: 'Dial 112 Heatmap' },
 			{ key: 'accidents' as const, icon: '🚗', label: 'Accident Points' },
 			{ key: 'accidentsHeatmap' as const, icon: '🔥', label: 'Accident Heatmap' },
-			{ key: 'police' as const, icon: '🚔', label: 'Police Stations' },
-			{ key: 'hospitals' as const, icon: '🏥', label: 'Hospitals' },
-			{ key: 'atms' as const, icon: '🏧', label: 'ATMs' },
-			{ key: 'banks' as const, icon: '🏦', label: 'Banks' },
-			{ key: 'cctv' as const, icon: '🎥', label: 'CCTV Cameras' },
+			// { key: 'police' as const, icon: '🚔', label: 'Police Stations' },
 		];
 
 		// Combine all layers and calculate counts
@@ -2651,11 +2647,7 @@ export default function Home() {
 			let count = 0;
 			if (layer.key === 'dial112') count = filteredDial112.length;
 			else if (layer.key === 'accidents') count = filteredAccidents.length;
-			else if (layer.key === 'police') count = filteredPolice.length;
-			else if (layer.key === 'hospitals') count = filteredHospitals.length;
-			else if (layer.key === 'atms') count = filteredAtms.length;
-			else if (layer.key === 'banks') count = filteredBanks.length;
-			else if (layer.key === 'cctv') count = filteredCctv.length;
+			// else if (layer.key === 'police') count = filteredPolice.length;
 			// Heatmaps use the same filtered data counts effectively
 			else if (layer.key === 'dial112Heatmap') count = filteredDial112.length;
 			else if (layer.key === 'accidentsHeatmap') count = filteredAccidents.length;
@@ -2663,15 +2655,10 @@ export default function Home() {
 			return { ...layer, count };
 		});
 
-		// Dynamic layer definitions from categories state
-		const dynamicLayers = categories.map(cat => ({
-			key: cat.id,
-			icon: cat.icon || '📌',
-			label: cat.name,
-			count: filterInBoundary(categoryData[cat.id] || []).length
-		}));
+		// Dynamic layers removed from Area View as requested
+		// const dynamicLayers = categories.map(cat => ({ ... }));
 
-		const fullLayerList = [...allLayers, ...dynamicLayers];
+		const fullLayerList = [...allLayers];
 
 		return (
 			<div className="flex flex-col h-full">
