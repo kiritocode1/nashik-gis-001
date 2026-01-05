@@ -6,7 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import { SliderV1 } from "@/components/NewToggle";
 import { parseKMLFile, type KMLFeature, type KMLMarker } from "@/utils/kmlParser";
 import { isPointNearPath, isPointInPolygon, findContainingBoundary, filterPointsInBoundary, calculateDistance } from "@/utils/geoUtils";
-import { getCategoryDisplayName } from "@/lib/categoryMapping";
+import { getCategoryDisplayName, getSubcategoryEmoji } from "@/lib/categoryMapping";
 import { AnimatePresence } from "framer-motion";
 import StreetViewPopup from "@/components/StreetViewPopup";
 import OfficerPopup from "@/components/OfficerPopup";
@@ -1820,7 +1820,6 @@ export default function Home() {
 					markers: filteredDial112.map((c) => ({
 						position: { lat: c.latitude, lng: c.longitude },
 						title: c.eventId || c.policeStation || "Dial 112 Call",
-						label: "112",
 					})),
 				},
 				// Real CCTV data from external API
@@ -1949,7 +1948,6 @@ export default function Home() {
 							return {
 								position: { lat: accident.latitude, lng: accident.longitude },
 								title: `Accident ${accident.srNo} - ${accident.accidentCount} accidents`,
-								label: "🚗",
 								extraData: {
 									state: accident.state,
 									district: accident.district,
@@ -2009,22 +2007,33 @@ export default function Home() {
 							name: getCategoryDisplayName(category.name),
 							color: category.color || "#888888",
 							visible: true,
-							markers: filteredPoints.map((point) => ({
-								position: {
-									lat: typeof point.latitude === "string" ? parseFloat(point.latitude) : parseFloat(String(point.latitude)),
-									lng: typeof point.longitude === "string" ? parseFloat(point.longitude) : parseFloat(String(point.longitude)),
-								},
-								title: point.name,
-								label: category.icon,
-								extraData: {
-									description: point.description,
-									address: point.address,
-									categoryName: point.category_name,
-									categoryColor: point.category_color,
-									status: point.status,
-									createdAt: point.created_at,
-								},
-							})),
+							markers: filteredPoints.map((point) => {
+								// Find subcategory name for this point
+								const subcategory = category.subcategories.find(
+									(sub) => sub.id === point.subcategory_id
+								);
+								const subcategoryName = subcategory?.name || "";
+								const emoji = getSubcategoryEmoji(subcategoryName, category.name);
+
+								return {
+									position: {
+										lat: typeof point.latitude === "string" ? parseFloat(point.latitude) : parseFloat(String(point.latitude)),
+										lng: typeof point.longitude === "string" ? parseFloat(point.longitude) : parseFloat(String(point.longitude)),
+									},
+									title: point.name,
+									label: emoji,
+									icon: emoji,
+									extraData: {
+										description: point.description,
+										address: point.address,
+										categoryName: point.category_name,
+										categoryColor: point.category_color,
+										subcategoryName: subcategoryName,
+										status: point.status,
+										createdAt: point.created_at,
+									},
+								};
+							}),
 						};
 					}),
 			]

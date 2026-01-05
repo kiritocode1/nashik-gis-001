@@ -1,8 +1,8 @@
 /**
- * Category name mapping for the Nashik GIS application.
+ * Category and Subcategory mapping for the Nashik GIS application.
  * 
  * The database has incorrect category names that don't match their subcategories.
- * This mapping provides the correct display names based on what the subcategories actually contain.
+ * This mapping provides the correct display names and emojis based on what the data actually contains.
  * 
  * This is a temporary client-side fix until the database is corrected.
  */
@@ -69,6 +69,102 @@ export const CATEGORY_ICON_MAP: Record<string, string> = {
 };
 
 /**
+ * Comprehensive subcategory emoji mapping
+ * Maps subcategory names (Marathi/English) to appropriate emojis for map pins
+ */
+export const SUBCATEGORY_EMOJI_MAP: Record<string, string> = {
+    // ============ Police Infrastructure (Category: Temple) ============
+    "पोलीस स्टेशन": "🚔",
+    "पोलीस चौकी": "🏛️",
+    "SDPO कार्यालय": "🏢",
+    "पोलीस इमारती": "🏗️",
+    "HSP मदत केंद्र": "🆘",
+    "पोलीस मालकीच्या खुल्या जमिनी": "🗺️",
+    "वायरलेस रिपीटर्स": "📡",
+
+    // ============ CCTV Types (Category: Police Stations) ============
+    "सरकारी CCTV": "🎥",
+    "निम-सरकारी CCTV": "📹",
+    "खाजगी CCTV": "📷",
+    "पेट्रोल पंप CCTV": "⛽",
+    "बँक CCTV": "🏦",
+    "ATM CCTV": "🏧",
+    "सोसायटी CCTV": "🏘️",
+    "शाळा CCTV": "🏫",
+    "सार्वजनिक बागा CCTV": "🌳",
+    "बाजार पेठ CCTV": "🏪",
+
+    // ============ Religious/Social Places (Category: Colleges) ============
+    "धार्मिक स्थळे": "🛕",
+    "विवादित धार्मिक स्थळे": "⚠️",
+    "स्मारके / पुतळे": "🗿",
+    "मर्मस्थळे": "📍",
+    "माध पर्यटन": "🎭",
+
+    // ============ Tourism (Category: Mandal Office) ============
+    "ऐतिहासिक स्थळे": "🏰",
+    "धार्मिक पर्यटन": "⛩️",
+    "निसर्ग पर्यटन": "🏞️",
+
+    // ============ Transport Facilities (Category: Railway Stations) ============
+    "पेट्रोल पंप": "⛽",
+    "टोल नाका": "🛣️",
+
+    // ============ Emergency Services (Category: SDO Office) ============
+    "अग्निशमन केंद्र": "🚒",
+    "नागरी संरक्षण": "🛡️",
+    "होमगार्ड": "💂",
+
+    // ============ Industrial (Category: Stone Crusher) ============
+    "औद्योगिक क्षेत्र": "🏭",
+    "कारखाने": "🏭",
+
+    // ============ Accused/Suspects (Category: Talathi Office) ============
+    "सक्रिय आरोपी": "🔴",
+    "जामीनावर आरोपी": "🟡",
+    "फरार आरोपी": "🏃",
+
+    // ============ Crime Records (Category: Mining) ============
+    "घरफोडी": "🏠",
+    "मोटारसायकल चोरी": "🏍️",
+
+    // ============ Generic/Other ============
+    "इतर": "📌",
+
+    // ============ English fallbacks ============
+    "Police Station": "🚔",
+    "Police Stations": "🚔",
+    "Hospital": "🏥",
+    "Hospitals": "🏥",
+    "ATM": "🏧",
+    "Bank": "🏦",
+    "School": "🏫",
+    "College": "🎓",
+    "Temple": "🛕",
+    "Mosque": "🕌",
+    "Church": "⛪",
+    "Fire Station": "🚒",
+    "Petrol Pump": "⛽",
+    "Gas Station": "⛽",
+    "Factory": "🏭",
+    "Industry": "🏭",
+    "CCTV": "📹",
+    "Camera": "📷",
+    "Monument": "🗿",
+    "Park": "🌳",
+    "Garden": "🌺",
+    "Market": "🏪",
+    "Shopping": "🛒",
+    "Tourist": "🏞️",
+    "Historical": "🏰",
+    "Religious": "🛕",
+    "Emergency": "🚨",
+    "Accused": "👤",
+    "Criminal": "🔴",
+    "Crime": "📋",
+};
+
+/**
  * Get the correct display name for a category
  * @param originalName - The original (incorrect) category name from the database
  * @returns The corrected display name, or the original if no mapping exists
@@ -93,6 +189,60 @@ export function getCategoryDisplayNameEN(originalName: string): string {
  */
 export function getCategoryIcon(originalName: string): string {
     return CATEGORY_ICON_MAP[originalName] || "📍";
+}
+
+/**
+ * Get the appropriate emoji for a subcategory
+ * Uses exact match first, then partial matching for flexibility
+ * @param subcategoryName - The subcategory name (Marathi or English)
+ * @param categoryName - Optional category name for fallback
+ * @returns The appropriate emoji for the subcategory
+ */
+export function getSubcategoryEmoji(subcategoryName: string, categoryName?: string): string {
+    // Exact match
+    if (SUBCATEGORY_EMOJI_MAP[subcategoryName]) {
+        return SUBCATEGORY_EMOJI_MAP[subcategoryName];
+    }
+
+    // Try lowercase match
+    const lowerName = subcategoryName.toLowerCase();
+    for (const [key, emoji] of Object.entries(SUBCATEGORY_EMOJI_MAP)) {
+        if (key.toLowerCase() === lowerName) {
+            return emoji;
+        }
+    }
+
+    // Partial match - check if subcategory name contains any key
+    for (const [key, emoji] of Object.entries(SUBCATEGORY_EMOJI_MAP)) {
+        if (subcategoryName.includes(key) || key.includes(subcategoryName)) {
+            return emoji;
+        }
+    }
+
+    // Pattern-based matching for common terms
+    if (subcategoryName.includes("CCTV") || subcategoryName.includes("cctv")) {
+        return "📹";
+    }
+    if (subcategoryName.includes("पोलीस") || subcategoryName.toLowerCase().includes("police")) {
+        return "🚔";
+    }
+    if (subcategoryName.includes("धार्मिक") || subcategoryName.toLowerCase().includes("religious")) {
+        return "🛕";
+    }
+    if (subcategoryName.includes("पर्यटन") || subcategoryName.toLowerCase().includes("tourist")) {
+        return "🏞️";
+    }
+    if (subcategoryName.includes("आरोपी") || subcategoryName.toLowerCase().includes("accused")) {
+        return "👤";
+    }
+
+    // Fall back to category icon if provided
+    if (categoryName && CATEGORY_ICON_MAP[categoryName]) {
+        return CATEGORY_ICON_MAP[categoryName];
+    }
+
+    // Default pin
+    return "📍";
 }
 
 /**

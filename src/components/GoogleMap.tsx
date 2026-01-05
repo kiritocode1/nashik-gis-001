@@ -176,11 +176,14 @@ export default function GoogleMap({
 			const style = document.createElement("style");
 			style.id = styleId;
 			style.textContent = `
-				.gis-marker { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; }
+				.gis-marker { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: pointer; }
 				.gis-marker-dot { width: 12px; height: 12px; border-radius: 9999px; background: var(--marker-color, #22d3ee); box-shadow: 0 0 12px 4px color-mix(in srgb, var(--marker-color, #22d3ee) 60%, transparent), 0 0 2px 1px rgba(0,0,0,0.6) inset; }
 				.gis-marker-pulse { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; border-radius: 9999px; transform: translate(-50%, -50%); background: var(--marker-color, #22d3ee); opacity: 0.6; filter: blur(2px); animation: gisPulse 2.2s ease-out infinite; }
+				.gis-marker-emoji { font-size: 20px; line-height: 1; text-shadow: 0 2px 8px rgba(0,0,0,0.8), 0 0 4px rgba(0,0,0,0.9), 0 0 12px var(--marker-color, rgba(255,255,255,0.3)); filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8)); transition: transform 0.15s ease, filter 0.15s ease; }
+				.gis-marker:hover .gis-marker-emoji { transform: scale(1.3); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)) drop-shadow(0 0 8px var(--marker-color, rgba(255,255,255,0.5))); }
+				.gis-marker-emoji-pulse { position: absolute; top: 50%; left: 50%; width: 20px; height: 20px; border-radius: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle, var(--marker-color, rgba(255,255,255,0.4)) 0%, transparent 70%); opacity: 0.5; animation: gisPulse 2.2s ease-out infinite; z-index: -1; }
 				@keyframes gisPulse { 0% { transform: translate(-50%, -50%) scale(1); opacity: 0.65; } 70% { transform: translate(-50%, -50%) scale(2.1); opacity: 0.08; } 100% { transform: translate(-50%, -50%) scale(2.6); opacity: 0; } }
-				.gis-legend { position: absolute; top: -12px; left: 14px; transform: translateY(-100%); background: #0b1220; color: #e5e7eb; border: 1px solid #1f2937; border-radius: 8px; padding: 8px 10px; white-space: nowrap; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.35); opacity: 0; pointer-events: none; transition: opacity .15s ease, transform .15s ease; }
+				.gis-legend { position: absolute; top: -12px; left: 14px; transform: translateY(-100%); background: #0b1220; color: #e5e7eb; border: 1px solid #1f2937; border-radius: 8px; padding: 8px 10px; white-space: nowrap; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.35); opacity: 0; pointer-events: none; transition: opacity .15s ease, transform .15s ease; z-index: 10; }
 				.gis-legend-header { font-weight: 600; margin-bottom: 2px; color: #cfe9ff; }
 				.gis-legend-subtle { color: #93a4b5; font-size: 11px; }
 				.gis-marker:hover .gis-legend { opacity: 1; transform: translateY(calc(-100% - 2px)); }
@@ -206,10 +209,30 @@ export default function GoogleMap({
 		container.style.setProperty("--marker-color", options.color || "#22d3ee");
 		container.setAttribute("aria-label", options.title || options.label || "Marker");
 
-		const pulse = document.createElement("div");
-		pulse.className = "gis-marker-pulse";
-		const dot = document.createElement("div");
-		dot.className = "gis-marker-dot";
+		// Check if label is an emoji (simple check for emoji-like characters)
+		const isEmoji = options.label && /\p{Emoji}/u.test(options.label);
+
+		if (isEmoji && options.label) {
+			// Create emoji marker
+			const emojiPulse = document.createElement("div");
+			emojiPulse.className = "gis-marker-emoji-pulse";
+
+			const emojiEl = document.createElement("div");
+			emojiEl.className = "gis-marker-emoji";
+			emojiEl.textContent = options.label;
+
+			container.appendChild(emojiPulse);
+			container.appendChild(emojiEl);
+		} else {
+			// Create standard dot marker
+			const pulse = document.createElement("div");
+			pulse.className = "gis-marker-pulse";
+			const dot = document.createElement("div");
+			dot.className = "gis-marker-dot";
+
+			container.appendChild(pulse);
+			container.appendChild(dot);
+		}
 
 		const legend = document.createElement("div");
 		legend.className = "gis-legend";
@@ -217,9 +240,6 @@ export default function GoogleMap({
 			<div class="gis-legend-header">${(options.title || options.label || "Point").replace(/'/g, "&apos;")}</div>
 			<div class="gis-legend-subtle">${(options.groupName || "Marker").replace(/'/g, "&apos;")}</div>
 		`;
-
-		container.appendChild(pulse);
-		container.appendChild(dot);
 		container.appendChild(legend);
 
 		if (options.onClick) {
@@ -419,6 +439,7 @@ export default function GoogleMap({
 					group.markers.forEach((markerData) => {
 						const overlay = createHtmlMarker(markerData.position, {
 							title: markerData.title || markerData.label || group.name,
+							label: markerData.label,
 							groupName: group.name,
 							color: group.color,
 							onClick: () => {
