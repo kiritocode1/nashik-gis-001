@@ -1451,7 +1451,7 @@ export default function Home() {
 		loadPoliceData();
 	}, [policeLayerVisible, areaLayerToggles.police, policeLocations.length, policeLoading]);
 
-	
+
 	// Load Procession Routes data when any festival toggle is enabled
 	useEffect(() => {
 		const loadProcessionData = async () => {
@@ -2332,13 +2332,35 @@ export default function Home() {
 		</div>
 	);
 
+	// Helper to determine active mode for heatmaps
+	const isHeatmapAreaMode = !!selectedBoundary;
+
+	// Helper to filter data for heatmaps when in Area Mode
+	const filterForHeatmap = <T extends { latitude: number | string; longitude: number | string }>(data: T[], type: string) => {
+		if (!isHeatmapAreaMode || !selectedBoundary) return data;
+
+		const filtered = data.filter(item => {
+			const lat = typeof item.latitude === 'string' ? parseFloat(item.latitude) : (item.latitude as number);
+			const lng = typeof item.longitude === 'string' ? parseFloat(item.longitude) : (item.longitude as number);
+			if (isNaN(lat) || isNaN(lng)) return false;
+			return isPointInPolygon({ lat, lng }, selectedBoundary.coordinates);
+		});
+
+		console.log(`🔥 Heatmap Filter [${type}]: ${data.length} → ${filtered.length} (Area Mode: ${selectedBoundary.name})`);
+		return filtered;
+	};
+
+	// Prepare data sources
+	const dial112HeatmapSource = isHeatmapAreaMode ? filterForHeatmap(dial112AllCalls, 'dial112') : dial112AllCalls;
+	const accidentHeatmapSource = isHeatmapAreaMode ? filterForHeatmap(accidentAllRecords, 'accidents') : accidentAllRecords;
+
 	// Dial 112 heatmap data
 	const dial112HeatmapData = {
-		data: dial112AllCalls.map((call) => ({
+		data: dial112HeatmapSource.map((call) => ({
 			position: { lat: call.latitude, lng: call.longitude },
 			weight: 1,
 		})),
-		visible: dial112HeatmapVisible,
+		visible: isHeatmapAreaMode ? !!areaLayerToggles.dial112Heatmap : dial112HeatmapVisible,
 		radius: 20,
 		opacity: 0.6,
 		gradient: [
@@ -2353,11 +2375,11 @@ export default function Home() {
 
 	// Accident heatmap data
 	const accidentHeatmapData = {
-		data: accidentAllRecords.map((record) => ({
+		data: accidentHeatmapSource.map((record) => ({
 			position: { lat: record.latitude, lng: record.longitude },
 			weight: record.accidentCount || 1,
 		})),
-		visible: accidentHeatmapVisible,
+		visible: isHeatmapAreaMode ? !!areaLayerToggles.accidentsHeatmap : accidentHeatmapVisible,
 		radius: 20,
 		opacity: 0.6,
 		gradient: [
