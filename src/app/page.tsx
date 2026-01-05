@@ -635,21 +635,50 @@ export default function Home() {
 
 					console.log(`🔍 Area search: "${areaName}", type: ${dataType}`);
 
-					// Use pre-loaded KML features only
-					if (!kmlFeatures) {
-						console.warn("⚠️ KML features not loaded yet, skipping area search");
-						areaSearchMode = false;
-						break;
+					// 1. Try KML Boundaries first (Offline/Fast)
+					if (kmlFeatures) {
+						const { findBoundaryByName } = await import("@/utils/geoUtils");
+						targetBoundary = findBoundaryByName(areaName, kmlFeatures);
 					}
 
-					// Find the boundary
-					const { findBoundaryByName } = await import("@/utils/geoUtils");
-					targetBoundary = findBoundaryByName(areaName, kmlFeatures);
+					// 2. If no KML boundary, try Google Maps Geocoding (Online/Fallback)
+					if (!targetBoundary && typeof window !== 'undefined' && window.google?.maps) {
+						try {
+							console.log(`🗺️ KML match failed. Trying Geocoding for: ${areaName}`);
+							const geocoder = new window.google.maps.Geocoder();
+							const { results } = await geocoder.geocode({
+								address: `${areaName}, Nashik, Maharashtra`, // Append context
+								componentRestrictions: { country: 'IN' }
+							});
+
+							if (results && results[0]) {
+								const location = results[0].geometry.location;
+								const lat = location.lat();
+								const lng = location.lng();
+
+								console.log(`📍 Geocoded "${areaName}" to ${lat}, ${lng}`);
+
+								// Create a synthetic boundary/center point for radius search
+								// We'll mark this as a "point" type feature so we know to use radius
+								targetBoundary = {
+									name: results[0].formatted_address || areaName,
+									type: "point", // Custom type for point-based search
+									coordinates: [{ lat, lng }], // Center point
+									properties: {
+										radius: "15000" // 15km radius in meters (increased for rural coverage)
+									}
+								};
+							}
+						} catch (err) {
+							console.error("❌ Geocoding failed:", err);
+						}
+					}
 
 					if (targetBoundary) {
-						console.log(`✅ Found boundary: ${targetBoundary.name} for query: ${areaName} (type: ${dataType})`);
+						console.log(`✅ Search Target: ${targetBoundary.name} (Type: ${targetBoundary.type})`);
 					} else {
-						console.log(`⚠️ No boundary found for: ${areaName}`);
+						console.log(`⚠️ No location found for: ${areaName}`);
+						areaSearchMode = false; // Fallback to string match
 					}
 
 					break;
@@ -692,7 +721,7 @@ export default function Home() {
 
 				// === AREA-BASED FILTERING ===
 				if (areaSearchMode && targetBoundary) {
-					const { filterPointsInBoundary } = await import("@/utils/geoUtils");
+					const { filterPointsInBoundary, calculateDistance } = await import("@/utils/geoUtils");
 
 					// Helper to filter and add results for a specific data type
 					const addFilteredResults = (
@@ -701,17 +730,33 @@ export default function Home() {
 						titleFn: (item: unknown) => string,
 						subtitleFn?: (item: unknown) => string
 					) => {
-						const filtered = filterPointsInBoundary(
-							items.map((item: unknown) => {
-								const i = item as Record<string, unknown>;
-								return {
-									...i,
-									lat: typeof i.latitude === 'string' ? parseFloat(i.latitude as string) : i.latitude as number,
-									lng: typeof i.longitude === 'string' ? parseFloat(i.longitude as string) : i.longitude as number,
-								};
-							}),
-							targetBoundary!
-						);
+						const mappedItems = items.map((item: unknown) => {
+							const i = item as Record<string, unknown>;
+							return {
+								...i,
+								lat: typeof i.latitude === 'string' ? parseFloat(i.latitude as string) : i.latitude as number,
+								lng: typeof i.longitude === 'string' ? parseFloat(i.longitude as string) : i.longitude as number,
+							};
+						});
+
+						let filtered: typeof mappedItems = [];
+
+						if (targetBoundary!.type === 'point' && targetBoundary!.properties?.radius) {
+							// Radius Search (Geocoded Point)
+							const center = targetBoundary!.coordinates[0];
+							const radius = parseFloat(targetBoundary!.properties.radius);
+
+							filtered = mappedItems.filter(item => {
+								if (!item.lat || !item.lng) return false;
+								const dist = calculateDistance(center, item);
+								// console.log(`Debug Distance: ${dist}m for ${titleFn(item)}`); // Verbose logging
+								return dist <= radius;
+							});
+							console.log(`📍 Radius Search: Found ${filtered.length} items within ${radius}m of ${center.lat},${center.lng}`);
+						} else {
+							// Polygon Search (KML Boundary)
+							filtered = filterPointsInBoundary(mappedItems, targetBoundary!);
+						}
 
 						filtered.forEach((item: Record<string, unknown>) => {
 							results.push({
@@ -731,7 +776,7 @@ export default function Home() {
 						// 1. From dedicated/explicit map category
 						const policeStations = mapDataPoints.filter(p =>
 							p.category_name === "पोलीस आस्थापना" ||
-							(p.name && p.name.toLowerCase().includes("police"))
+							(p.name && (p.name.toLowerCase().includes("police") || p.name.includes("पोलीस")))
 						);
 						const count = addFilteredResults(
 							policeStations,
@@ -880,12 +925,14 @@ export default function Home() {
 						console.log(`⚠️ Found ${count} crimes in ${targetBoundary.name}`);
 					}
 
-					// Add summary result
-					if (results.length > 0) {
+					// Add summary result regardless of count, to confirm we found the location
+					if (targetBoundary) {
 						results.unshift({
 							id: 'area-summary',
 							title: `📍 ${targetBoundary.name}`,
-							subtitle: `Found ${results.length} ${dataType || 'items'} in this area`,
+							subtitle: results.length > 0
+								? `Found ${results.length} ${dataType || 'items'} in this area`
+								: `No ${dataType || 'items'} found within ${targetBoundary.properties?.radius ? parseInt(targetBoundary.properties.radius) / 1000 + 'km' : 'this area'}`,
 							type: "Area Summary",
 							position: {
 								lat: targetBoundary.coordinates[0]?.lat || 0,
