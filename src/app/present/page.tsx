@@ -266,7 +266,7 @@ const features = [
         bgColor: "bg-orange-500/10",
         borderColor: "border-orange-500/20",
         tagline: "Standardized location addressing system",
-        description: "Seamless integration with India's DigiPin system, ensuring precise, standardized location identification across all datasets and agencies.",
+        description: "Seamless integration with India's DigiPin system, modules are made to interop with digipin APIs, ensuring precise, standardized location identification across all datasets and agencies.",
         metrics: [
             { label: "Precision", value: "3m", icon: Target },
             { label: "Accuracy", value: "99%", icon: CheckCircle2 },
