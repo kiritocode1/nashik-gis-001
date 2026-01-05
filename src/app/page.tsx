@@ -6,6 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import { SliderV1 } from "@/components/NewToggle";
 import { parseKMLFile, type KMLFeature, type KMLMarker } from "@/utils/kmlParser";
 import { isPointNearPath, isPointInPolygon, findContainingBoundary, filterPointsInBoundary, calculateDistance } from "@/utils/geoUtils";
+import { getCategoryDisplayName } from "@/lib/categoryMapping";
 import { AnimatePresence } from "framer-motion";
 import StreetViewPopup from "@/components/StreetViewPopup";
 import OfficerPopup from "@/components/OfficerPopup";
@@ -2005,7 +2006,7 @@ export default function Home() {
 						}
 
 						return {
-							name: category.name,
+							name: getCategoryDisplayName(category.name),
 							color: category.color || "#888888",
 							visible: true,
 							markers: filteredPoints.map((point) => ({
@@ -2874,7 +2875,7 @@ export default function Home() {
 														className="w-3 h-3 rounded-full border border-white/20 shrink-0"
 														style={{ backgroundColor: category.color }}
 													></div>
-													<span className="text-sm font-medium text-gray-200 truncate">{category.name}</span>
+													<span className="text-sm font-medium text-gray-200 truncate">{getCategoryDisplayName(category.name)}</span>
 													<span
 														className={`px-2 py-0.5 text-xs rounded-full transition-colors ${categoryToggles[category.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
 															}`}
@@ -3320,7 +3321,7 @@ export default function Home() {
 															className="w-3 h-3 rounded-full border border-white/20 shrink-0"
 															style={{ backgroundColor: category.color }}
 														></div>
-														<span className="text-sm font-medium text-gray-200 truncate">{category.name}</span>
+														<span className="text-sm font-medium text-gray-200 truncate">{getCategoryDisplayName(category.name)}</span>
 														<span
 															className={`px-2 py-0.5 text-xs rounded-full transition-colors ${categoryToggles[category.id] ? `border` : "bg-gray-700/50 text-gray-500 border border-gray-600/30"
 																}`}
