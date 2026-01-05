@@ -1451,6 +1451,7 @@ export default function Home() {
 		loadPoliceData();
 	}, [policeLayerVisible, areaLayerToggles.police, policeLocations.length, policeLoading]);
 
+	
 	// Load Procession Routes data when any festival toggle is enabled
 	useEffect(() => {
 		const loadProcessionData = async () => {
