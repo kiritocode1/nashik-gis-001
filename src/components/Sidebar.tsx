@@ -177,6 +177,22 @@ const AreaViewIcon = ({ className }: { className?: string }) => (
 	</svg>
 );
 
+const HistoryIcon = ({ className }: { className?: string }) => (
+	<svg
+		className={className}
+		fill="none"
+		stroke="currentColor"
+		viewBox="0 0 24 24"
+	>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			strokeWidth={2}
+			d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+		/>
+	</svg>
+);
+
 // ... existing icons ...
 
 const sidebarSections = [
@@ -205,6 +221,12 @@ const sidebarSections = [
 		),
 		title: "Officer Tracking",
 		description: "Live officer locations",
+	},
+	{
+		id: "bandobast",
+		icon: HistoryIcon,
+		title: "Bandobast History",
+		description: "Historical deployments",
 	},
 	{
 		id: "search",
@@ -259,6 +281,7 @@ export interface SidebarProps {
 	settingsContent?: React.ReactNode;
 	officerTrackingContent?: React.ReactNode;
 	areaViewContent?: React.ReactNode; // New: Content for Area View tab
+	bandobastHistoryContent?: React.ReactNode; // New: Content for Bandobast History
 	onActiveSectionChange?: (sectionId: string | null) => void;
 	onSearch?: (query: string) => void;
 	searchResults?: SearchResult[];
@@ -356,6 +379,7 @@ export default function Sidebar({
 	settingsContent,
 	officerTrackingContent,
 	areaViewContent, // New
+	bandobastHistoryContent,
 	onActiveSectionChange,
 	onSearch,
 	searchResults = [],
@@ -664,6 +688,12 @@ export default function Sidebar({
 								{activeSection === "areaview" && (
 									<div className="flex-1 overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
 										<div className="space-y-4">{areaViewContent}</div>
+									</div>
+								)}
+
+								{activeSection === "bandobast" && (
+									<div className="flex-1 overflow-y-auto p-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+										<div className="space-y-4">{bandobastHistoryContent}</div>
 									</div>
 								)}
 

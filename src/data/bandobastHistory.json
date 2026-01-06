@@ -1,0 +1,1151 @@
+[
+    {
+        "id": "hist_vip_2026_01",
+        "name": "VIP Daura Bandobast - Sahyadri Farm",
+        "date": "2026-01-01",
+        "endDate": "2026-01-01",
+        "description": "High-security VIP visit to Sahyadri Farm, Mohadi using Janori Airport route. Road bandobast deployment from Airport to Vani.",
+        "stats": {
+            "officers": 85,
+            "vehicles": 25,
+            "hours": 12,
+            "incidents": 0
+        },
+        "timeline": [
+            {
+                "time": "08:00 AM",
+                "event": "Route Sanitization & Bomb Squad Check"
+            },
+            {
+                "time": "10:00 AM",
+                "event": "All Officers at Fixed Points (Janori to Mohadi)"
+            },
+            {
+                "time": "11:30 AM",
+                "event": "VIP Arrival at Janori Airport"
+            },
+            {
+                "time": "12:15 PM",
+                "event": "Convoy reaches Sahyadri Farm Main Gate"
+            },
+            {
+                "time": "02:30 PM",
+                "event": "Banquet Hall Program"
+            },
+            {
+                "time": "04:00 PM",
+                "event": "Return Journey starts"
+            }
+        ],
+        "points": [
+            {
+                "lat": 20.0800,
+                "lng": 73.8800,
+                "title": "Mohadi-Korate Tri-junction",
+                "officer": "PH 2588 H.A. Tuplondhe"
+            },
+            {
+                "lat": 20.0820,
+                "lng": 73.8820,
+                "title": "Ramaniya Hotel, Mohadi",
+                "officer": "N.Pro.PC Girish Patil"
+            },
+            {
+                "lat": 20.0850,
+                "lng": 73.8850,
+                "title": "Akrale Road Turn",
+                "officer": "MPC 28/92 R.R. Bhoye"
+            },
+            {
+                "lat": 20.0780,
+                "lng": 73.8780,
+                "title": "K.R.T. Highschool Gate",
+                "officer": "API K.B. Jadhav"
+            },
+            {
+                "lat": 20.0750,
+                "lng": 73.8750,
+                "title": "Shivaji Maharaj Chowk",
+                "officer": "WPSI Deore / PC 263 Bhavar"
+            },
+            {
+                "lat": 20.0700,
+                "lng": 73.8700,
+                "title": "Bharat Petrol Pump",
+                "officer": "PH 119 Manohar Kulal"
+            },
+            {
+                "lat": 20.0680,
+                "lng": 73.8680,
+                "title": "Ware House Road",
+                "officer": "PC 1937 Pawar"
+            },
+            {
+                "lat": 20.0650,
+                "lng": 73.8650,
+                "title": "Bhavar Farm Road",
+                "officer": "PH 1240 Dhakate"
+            },
+            {
+                "lat": 20.0620,
+                "lng": 73.8620,
+                "title": "Samata Nagar Road",
+                "officer": "MPC 1488 Davare"
+            },
+            {
+                "lat": 20.0600,
+                "lng": 73.8600,
+                "title": "Polyhouse Shed (Airport Rd)",
+                "officer": "PH 2038 Dnyaneshwar Gangurde"
+            },
+            {
+                "lat": 20.1150,
+                "lng": 73.9080,
+                "title": "Janori Airport Main Gate",
+                "officer": "PSI Pandurang Jadhav / MPC 2712 S.S. Bodke"
+            },
+            {
+                "lat": 20.1160,
+                "lng": 73.9090,
+                "title": "Airport Inner Gate",
+                "officer": "Flight Service Police"
+            },
+            {
+                "lat": 20.0900,
+                "lng": 73.9200,
+                "title": "T-Point, Ojhar",
+                "officer": "Shreni PSI Shantaram Nathe"
+            },
+            {
+                "lat": 20.0950,
+                "lng": 73.9250,
+                "title": "HAL Township Tunnel",
+                "officer": "PH 1886 Rahul More / N.Pro.PC Rohit Kuvar"
+            },
+            {
+                "lat": 20.0980,
+                "lng": 73.9280,
+                "title": "HAL Township Kamgar Gate",
+                "officer": "PC 669 Ramesh Bodke"
+            },
+            {
+                "lat": 20.1600,
+                "lng": 73.9800,
+                "title": "Pimpalgaon Bus Stand",
+                "officer": "Shreni PSI Ravindra Shilavat / API Kisan Dambale"
+            },
+            {
+                "lat": 20.0480,
+                "lng": 73.8450,
+                "title": "Sahyadri Farm Main Gate 2",
+                "officer": "PH 2047 B.K. Pajai / WPH 485 Chitra Jadhav"
+            },
+            {
+                "lat": 20.0495,
+                "lng": 73.8460,
+                "title": "Water Treatment Plant Gate",
+                "officer": "WPSI Sudam Chatre / NPC Ananda Mahale"
+            },
+            {
+                "lat": 20.0470,
+                "lng": 73.8440,
+                "title": "Sahyadri Parking Area",
+                "officer": "WPSI Valmik Rokade / PN 281 Yogesh Burkul"
+            },
+            {
+                "lat": 20.0485,
+                "lng": 73.8430,
+                "title": "Spray Dryer Main Gate",
+                "officer": "PH 2133 Pritam Lokhande / PH 89 Amol Salve"
+            },
+            {
+                "lat": 20.0490,
+                "lng": 73.8455,
+                "title": "Banquet Hall Entrance",
+                "officer": "API Sopan Rakhonde (In-charge)"
+            },
+            {
+                "lat": 20.1650,
+                "lng": 73.9850,
+                "title": "Highway Top Chaufuli",
+                "officer": "PH 577 Bhaskar More"
+            },
+            {
+                "lat": 20.1680,
+                "lng": 73.9880,
+                "title": "Kokangaon Bridge",
+                "officer": "Shreni PSI Chandrakant Masale"
+            },
+            {
+                "lat": 20.1700,
+                "lng": 73.9900,
+                "title": "Kadva River Bridge",
+                "officer": "PC 123 Shankar Sabale"
+            },
+            {
+                "lat": 20.1750,
+                "lng": 73.9950,
+                "title": "Pimpalgaon Toll Naka",
+                "officer": "PH 2376 Sushant Markad"
+            },
+            {
+                "lat": 20.1780,
+                "lng": 73.9920,
+                "title": "Old Kanda Market Service Rd",
+                "officer": "PH 78 Manoj Borale"
+            },
+            {
+                "lat": 20.1800,
+                "lng": 73.9900,
+                "title": "Sahyadri Bar/Vani Rd",
+                "officer": "PH 2327 Bhaupatil Zhade"
+            },
+            {
+                "lat": 20.1850,
+                "lng": 73.9850,
+                "title": "Vani Chaufuli",
+                "officer": "SAPONI Vijay Gayakwad / PH 596 Kharate"
+            },
+            {
+                "lat": 20.1900,
+                "lng": 73.9750,
+                "title": "Mukhed Chaufuli",
+                "officer": "PC 1112 Sunil Barve"
+            },
+            {
+                "lat": 20.1950,
+                "lng": 73.9700,
+                "title": "Nayara Petrol Pump",
+                "officer": "N.Pro.PC Samadhan Patil"
+            },
+            {
+                "lat": 20.2000,
+                "lng": 73.9650,
+                "title": "Antarveli Phata",
+                "officer": "N.Pro.PC Nikhil Jadhav"
+            },
+            {
+                "lat": 20.2050,
+                "lng": 73.9600,
+                "title": "Chinchkhed Phata",
+                "officer": "N.Pro.PC Sunil Shinde"
+            },
+            {
+                "lat": 20.2100,
+                "lng": 73.9550,
+                "title": "Jaukhed Vani Gaon",
+                "officer": "N.Pro.PC Niyesh Bhoye"
+            },
+            {
+                "lat": 20.2150,
+                "lng": 73.9500,
+                "title": "Materewadi Phata",
+                "officer": "N.Pro.PC Vishal Sabale"
+            },
+            {
+                "lat": 20.2200,
+                "lng": 73.9450,
+                "title": "Khedgaon Phata",
+                "officer": "PH 685 Samadhan Chavan"
+            },
+            {
+                "lat": 20.2250,
+                "lng": 73.9400,
+                "title": "Bopegaon Phata",
+                "officer": "N.Pro.PC Rahul Suryavanshi"
+            },
+            {
+                "lat": 20.2300,
+                "lng": 73.9350,
+                "title": "Tisgaon Phata",
+                "officer": "PH 1101 Kailas Bagul"
+            },
+            {
+                "lat": 20.2350,
+                "lng": 73.9300,
+                "title": "Sai Gajanan Petrol Pump",
+                "officer": "WPC 1588 Jyoti Gosavi"
+            },
+            {
+                "lat": 20.2380,
+                "lng": 73.9280,
+                "title": "Borale Phata",
+                "officer": "PC 43 Shubham Gurav"
+            },
+            {
+                "lat": 20.2400,
+                "lng": 73.9250,
+                "title": "Mavadi & Otale Phata",
+                "officer": "PC 2692 Shriram Varungse"
+            },
+            {
+                "lat": 20.2450,
+                "lng": 73.9200,
+                "title": "Sangamner Phata",
+                "officer": "PC 1636 Kiran Aher"
+            },
+            {
+                "lat": 20.2480,
+                "lng": 73.9180,
+                "title": "Chopda Lawns",
+                "officer": "PC 2400 Nitesh Patil"
+            },
+            {
+                "lat": 20.2500,
+                "lng": 73.9150,
+                "title": "Pimpalgaon Naka/Koliwada",
+                "officer": "Shreni PSI Bagul"
+            }
+        ],
+        "patrolPaths": [
+            {
+                "color": "#eab308",
+                "title": "Patrol: Mohadi Tri-junction (PH Tuplondhe)",
+                "path": [
+                    {
+                        "lat": 20.0805,
+                        "lng": 73.8805
+                    },
+                    {
+                        "lat": 20.0795,
+                        "lng": 73.8795
+                    },
+                    {
+                        "lat": 20.0795,
+                        "lng": 73.8805
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Ramaniya Hotel (NPC Patil)",
+                "path": [
+                    {
+                        "lat": 20.0825,
+                        "lng": 73.8825
+                    },
+                    {
+                        "lat": 20.0815,
+                        "lng": 73.8815
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Akrale Turn (MPC Bhoye)",
+                "path": [
+                    {
+                        "lat": 20.0855,
+                        "lng": 73.8855
+                    },
+                    {
+                        "lat": 20.0845,
+                        "lng": 73.8845
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: KRT Highschool (API Jadhav)",
+                "path": [
+                    {
+                        "lat": 20.0785,
+                        "lng": 73.8785
+                    },
+                    {
+                        "lat": 20.0775,
+                        "lng": 73.8775
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Shivaji Maharaj Chowk (WPSI Deore)",
+                "path": [
+                    {
+                        "lat": 20.0755,
+                        "lng": 73.8755
+                    },
+                    {
+                        "lat": 20.0745,
+                        "lng": 73.8745
+                    },
+                    {
+                        "lat": 20.0750,
+                        "lng": 73.8760
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Bharat Pump (PH Kulal)",
+                "path": [
+                    {
+                        "lat": 20.0705,
+                        "lng": 73.8705
+                    },
+                    {
+                        "lat": 20.0695,
+                        "lng": 73.8695
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Warehouse Rd (PC Pawar)",
+                "path": [
+                    {
+                        "lat": 20.0685,
+                        "lng": 73.8685
+                    },
+                    {
+                        "lat": 20.0675,
+                        "lng": 73.8675
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Bhavar Farm (PH Dhakate)",
+                "path": [
+                    {
+                        "lat": 20.0655,
+                        "lng": 73.8655
+                    },
+                    {
+                        "lat": 20.0645,
+                        "lng": 73.8645
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Samata Nagar (MPC Davare)",
+                "path": [
+                    {
+                        "lat": 20.0625,
+                        "lng": 73.8625
+                    },
+                    {
+                        "lat": 20.0615,
+                        "lng": 73.8615
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Polyhouse Shed (PH Gangurde)",
+                "path": [
+                    {
+                        "lat": 20.0605,
+                        "lng": 73.8605
+                    },
+                    {
+                        "lat": 20.0595,
+                        "lng": 73.8595
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#ef4444",
+                "title": "Patrol: Airport Main Gate (PSI Jadhav)",
+                "path": [
+                    {
+                        "lat": 20.1155,
+                        "lng": 73.9085
+                    },
+                    {
+                        "lat": 20.1145,
+                        "lng": 73.9075
+                    },
+                    {
+                        "lat": 20.1150,
+                        "lng": 73.9090
+                    }
+                ],
+                "weight": 5,
+                "glow": true
+            },
+            {
+                "color": "#ef4444",
+                "title": "Patrol: Airport Inner Gate (Flight Police)",
+                "path": [
+                    {
+                        "lat": 20.1165,
+                        "lng": 73.9095
+                    },
+                    {
+                        "lat": 20.1155,
+                        "lng": 73.9085
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Ojhar T-Point (PSI Nathe)",
+                "path": [
+                    {
+                        "lat": 20.0905,
+                        "lng": 73.9205
+                    },
+                    {
+                        "lat": 20.0895,
+                        "lng": 73.9195
+                    },
+                    {
+                        "lat": 20.0900,
+                        "lng": 73.9210
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#ef4444",
+                "title": "Patrol: HAL Tunnel (PH More)",
+                "path": [
+                    {
+                        "lat": 20.0955,
+                        "lng": 73.9255
+                    },
+                    {
+                        "lat": 20.0945,
+                        "lng": 73.9245
+                    }
+                ],
+                "weight": 5,
+                "glow": true
+            },
+            {
+                "color": "#ef4444",
+                "title": "Patrol: HAL Kamgar Gate (PC Bodke)",
+                "path": [
+                    {
+                        "lat": 20.0985,
+                        "lng": 73.9285
+                    },
+                    {
+                        "lat": 20.0975,
+                        "lng": 73.9275
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Pimpalgaon Stand (PSI Shilavat)",
+                "path": [
+                    {
+                        "lat": 20.1605,
+                        "lng": 73.9805
+                    },
+                    {
+                        "lat": 20.1595,
+                        "lng": 73.9795
+                    },
+                    {
+                        "lat": 20.1600,
+                        "lng": 73.9810
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#ef4444",
+                "title": "Patrol: Sahyadri Main Gate (PH Pajai)",
+                "path": [
+                    {
+                        "lat": 20.0485,
+                        "lng": 73.8455
+                    },
+                    {
+                        "lat": 20.0475,
+                        "lng": 73.8445
+                    },
+                    {
+                        "lat": 20.0480,
+                        "lng": 73.8460
+                    }
+                ],
+                "weight": 5,
+                "glow": true
+            },
+            {
+                "color": "#ef4444",
+                "title": "Patrol: WTP Gate (WPSI Chatre)",
+                "path": [
+                    {
+                        "lat": 20.0500,
+                        "lng": 73.8465
+                    },
+                    {
+                        "lat": 20.0490,
+                        "lng": 73.8455
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#ef4444",
+                "title": "Patrol: Parking Area (WPSI Rokade)",
+                "path": [
+                    {
+                        "lat": 20.0475,
+                        "lng": 73.8445
+                    },
+                    {
+                        "lat": 20.0465,
+                        "lng": 73.8435
+                    },
+                    {
+                        "lat": 20.0470,
+                        "lng": 73.8450
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#ef4444",
+                "title": "Patrol: Spray Dryer (PH Lokhande)",
+                "path": [
+                    {
+                        "lat": 20.0490,
+                        "lng": 73.8435
+                    },
+                    {
+                        "lat": 20.0480,
+                        "lng": 73.8425
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#ef4444",
+                "title": "Patrol: Banquet Hall (API Rakhonde)",
+                "path": [
+                    {
+                        "lat": 20.0495,
+                        "lng": 73.8460
+                    },
+                    {
+                        "lat": 20.0485,
+                        "lng": 73.8450
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Highway Top (PH More)",
+                "path": [
+                    {
+                        "lat": 20.1655,
+                        "lng": 73.9855
+                    },
+                    {
+                        "lat": 20.1645,
+                        "lng": 73.9845
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Kokangaon Bridge (PSI Masale)",
+                "path": [
+                    {
+                        "lat": 20.1685,
+                        "lng": 73.9885
+                    },
+                    {
+                        "lat": 20.1675,
+                        "lng": 73.9875
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Kadva Bridge (PC Sabale)",
+                "path": [
+                    {
+                        "lat": 20.1705,
+                        "lng": 73.9905
+                    },
+                    {
+                        "lat": 20.1695,
+                        "lng": 73.9895
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Pimpalgaon Toll (PH Markad)",
+                "path": [
+                    {
+                        "lat": 20.1755,
+                        "lng": 73.9955
+                    },
+                    {
+                        "lat": 20.1745,
+                        "lng": 73.9945
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Old Kanda Mkt (PH Borale)",
+                "path": [
+                    {
+                        "lat": 20.1785,
+                        "lng": 73.9925
+                    },
+                    {
+                        "lat": 20.1775,
+                        "lng": 73.9915
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Sahyadri Bar (PH Zhade)",
+                "path": [
+                    {
+                        "lat": 20.1805,
+                        "lng": 73.9905
+                    },
+                    {
+                        "lat": 20.1795,
+                        "lng": 73.9895
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#ef4444",
+                "title": "Patrol: Vani Chaufuli (SAPONI Gayakwad)",
+                "path": [
+                    {
+                        "lat": 20.1855,
+                        "lng": 73.9855
+                    },
+                    {
+                        "lat": 20.1845,
+                        "lng": 73.9845
+                    }
+                ],
+                "weight": 5,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Mukhed Phata (PC Barve)",
+                "path": [
+                    {
+                        "lat": 20.1905,
+                        "lng": 73.9755
+                    },
+                    {
+                        "lat": 20.1895,
+                        "lng": 73.9745
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Nayara Pump (NPC Patil)",
+                "path": [
+                    {
+                        "lat": 20.1955,
+                        "lng": 73.9705
+                    },
+                    {
+                        "lat": 20.1945,
+                        "lng": 73.9695
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Antarveli Phata (NPC Jadhav)",
+                "path": [
+                    {
+                        "lat": 20.2005,
+                        "lng": 73.9655
+                    },
+                    {
+                        "lat": 20.1995,
+                        "lng": 73.9645
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Chinchkhed Phata (NPC Shinde)",
+                "path": [
+                    {
+                        "lat": 20.2055,
+                        "lng": 73.9605
+                    },
+                    {
+                        "lat": 20.2045,
+                        "lng": 73.9595
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Jaukhed Vani (NPC Bhoye)",
+                "path": [
+                    {
+                        "lat": 20.2105,
+                        "lng": 73.9555
+                    },
+                    {
+                        "lat": 20.2095,
+                        "lng": 73.9545
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Materewadi Phata (NPC Sabale)",
+                "path": [
+                    {
+                        "lat": 20.2155,
+                        "lng": 73.9505
+                    },
+                    {
+                        "lat": 20.2145,
+                        "lng": 73.9495
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Khedgaon Phata (PH Chavan)",
+                "path": [
+                    {
+                        "lat": 20.2205,
+                        "lng": 73.9455
+                    },
+                    {
+                        "lat": 20.2195,
+                        "lng": 73.9445
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Bopegaon Phata (NPC Suryavanshi)",
+                "path": [
+                    {
+                        "lat": 20.2255,
+                        "lng": 73.9405
+                    },
+                    {
+                        "lat": 20.2245,
+                        "lng": 73.9395
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Tisgaon Phata (PH Bagul)",
+                "path": [
+                    {
+                        "lat": 20.2305,
+                        "lng": 73.9355
+                    },
+                    {
+                        "lat": 20.2295,
+                        "lng": 73.9345
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Sai Gajanan Pump (WPC Gosavi)",
+                "path": [
+                    {
+                        "lat": 20.2355,
+                        "lng": 73.9305
+                    },
+                    {
+                        "lat": 20.2345,
+                        "lng": 73.9295
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Borale Phata (PC Gurav)",
+                "path": [
+                    {
+                        "lat": 20.2385,
+                        "lng": 73.9285
+                    },
+                    {
+                        "lat": 20.2375,
+                        "lng": 73.9275
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Mavadi Phata (PC Varungse)",
+                "path": [
+                    {
+                        "lat": 20.2405,
+                        "lng": 73.9255
+                    },
+                    {
+                        "lat": 20.2395,
+                        "lng": 73.9245
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Sangamner Phata (PC Aher)",
+                "path": [
+                    {
+                        "lat": 20.2455,
+                        "lng": 73.9205
+                    },
+                    {
+                        "lat": 20.2445,
+                        "lng": 73.9195
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Chopda Lawns (PC Patil)",
+                "path": [
+                    {
+                        "lat": 20.2485,
+                        "lng": 73.9185
+                    },
+                    {
+                        "lat": 20.2475,
+                        "lng": 73.9175
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            },
+            {
+                "color": "#eab308",
+                "title": "Patrol: Koliwada (PSI Bagul)",
+                "path": [
+                    {
+                        "lat": 20.2505,
+                        "lng": 73.9155
+                    },
+                    {
+                        "lat": 20.2495,
+                        "lng": 73.9145
+                    }
+                ],
+                "weight": 4,
+                "glow": true
+            }
+        ],
+        "zones": [
+            {
+                "name": "Sahyadri Farm High Security Zone",
+                "fillColor": "#ef4444",
+                "strokeColor": "#b91c1c",
+                "paths": [
+                    {
+                        "lat": 20.0520,
+                        "lng": 73.8420
+                    },
+                    {
+                        "lat": 20.0520,
+                        "lng": 73.8480
+                    },
+                    {
+                        "lat": 20.0450,
+                        "lng": 73.8480
+                    },
+                    {
+                        "lat": 20.0450,
+                        "lng": 73.8420
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "hist_2",
+        "name": "Kumbh Mela Shahi Snan 2024",
+        "date": "2024-08-20",
+        "description": "Security arrangements for the first Shahi Snan at Ramkund. High-security zone enforcement.",
+        "stats": {
+            "officers": 5000,
+            "vehicles": 300,
+            "hours": 48,
+            "incidents": 0
+        },
+        "timeline": [
+            {
+                "time": "04:00 AM",
+                "event": "Perimeter lockdown"
+            },
+            {
+                "time": "06:00 AM",
+                "event": "Shahi Snan begins"
+            },
+            {
+                "time": "12:00 PM",
+                "event": "VIP movement on Godavari bridge"
+            }
+        ],
+        "points": [
+            {
+                "lat": 20.0016,
+                "lng": 73.7945,
+                "title": "Ramkund Main Point",
+                "officer": "DCP Zone 1"
+            },
+            {
+                "lat": 20.0030,
+                "lng": 73.7960,
+                "title": "Laxman Rekha Point",
+                "officer": "ACP West"
+            },
+            {
+                "lat": 20.0000,
+                "lng": 73.7920,
+                "title": "Goda Park Entrance",
+                "officer": "PI Crime"
+            },
+            {
+                "lat": 19.9950,
+                "lng": 73.7900,
+                "title": "Sardar Chowk Entrance",
+                "officer": "PSI More"
+            }
+        ],
+        "patrolPaths": [],
+        "zones": [
+            {
+                "name": "Core Security Perimeter",
+                "fillColor": "#eab308",
+                "paths": [
+                    {
+                        "lat": 19.9985,
+                        "lng": 73.7890
+                    },
+                    {
+                        "lat": 20.0060,
+                        "lng": 73.7885
+                    },
+                    {
+                        "lat": 20.0075,
+                        "lng": 73.7980
+                    },
+                    {
+                        "lat": 20.0020,
+                        "lng": 73.8020
+                    },
+                    {
+                        "lat": 19.9975,
+                        "lng": 73.8010
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "id": "hist_3",
+        "name": "Ambedkar Jayanti Bandobast",
+        "date": "2024-04-14",
+        "description": "Bandobast at key statues and processing routes.",
+        "stats": {
+            "officers": 800,
+            "vehicles": 40,
+            "hours": 12,
+            "incidents": 0
+        },
+        "points": [
+            {
+                "lat": 19.9900,
+                "lng": 73.7800,
+                "title": "Ambedkar Statue CBS",
+                "officer": "DySP City"
+            },
+            {
+                "lat": 19.9850,
+                "lng": 73.7750,
+                "title": "Bhimwadi Point",
+                "officer": "PI City"
+            }
+        ]
+    }
+]

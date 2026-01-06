@@ -10,6 +10,7 @@ import { getCategoryDisplayName, getSubcategoryEmoji } from "@/lib/categoryMappi
 import { AnimatePresence } from "framer-motion";
 import StreetViewPopup from "@/components/StreetViewPopup";
 import OfficerPopup from "@/components/OfficerPopup";
+import BandobastHistory from "@/components/BandobastHistory";
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
 	fetchCCTVLocations,
@@ -445,6 +446,55 @@ export default function Home() {
 	const [officerPanelActive, setOfficerPanelActive] = useState(false);
 	const [selectedOfficer, setSelectedOfficer] = useState<OfficerDutyLocation | null>(null);
 	const [directions, setDirections] = useState<any>(null); // Google Maps DirectionsResult
+	const [bandobastMarkers, setBandobastMarkers] = useState<any[]>([]);
+	const [bandobastPolygons, setBandobastPolygons] = useState<any[]>([]);
+	const [bandobastPaths, setBandobastPaths] = useState<any[]>([]);
+
+	const handleBandobastSelect = useCallback((event: any) => {
+		// Clear other selections to focus on history
+		setClickedPoint(null);
+		setOfficerList([]); // Clear live officers if any
+
+		const markers = event.points.map((point: any) => ({
+			position: { lat: point.lat, lng: point.lng },
+			title: point.title,
+			label: "👮",
+			meta: {
+				officerName: point.officer,
+				details: point.title,
+				type: "bandobast_history"
+			}
+		}));
+		setBandobastMarkers(markers);
+
+		// Set polygons/zones if available
+		if (event.zones) {
+			setBandobastPolygons(event.zones.map((zone: any) => ({
+				...zone,
+				visible: true,
+				zIndex: 400
+			})));
+		} else {
+			setBandobastPolygons([]);
+		}
+
+		// Set patrol paths/lines if available
+		if (event.patrolPaths) {
+			setBandobastPaths(event.patrolPaths.map((path: any) => ({
+				...path,
+				visible: true,
+				zIndex: 900,
+				glow: true
+			})));
+		} else {
+			setBandobastPaths([]);
+		}
+
+		// If map center update is needed, it can be done here or via selectedPoint
+		if (markers.length > 0) {
+			setSelectedPoint({ lat: markers[0].position.lat, lng: markers[0].position.lng, zoom: 14 });
+		}
+	}, []);
 
 	// ATM layer state
 	const [atmLayerVisible, setAtmLayerVisible] = useState(false);
@@ -1814,6 +1864,12 @@ export default function Home() {
 					}] : []
 				},
 				{
+					name: "Bandobast History",
+					color: "#3b82f6",
+					visible: bandobastMarkers.length > 0,
+					markers: bandobastMarkers
+				},
+				{
 					name: "Dial 112 Calls",
 					color: "#EAB308", // Amber
 					visible: getDial112Visibility(),
@@ -2825,6 +2881,7 @@ export default function Home() {
 				}}
 				externalActiveSection={sidebarActiveSection}
 				areaViewContent={areaViewContent}
+				bandobastHistoryContent={<BandobastHistory onSelectBandobast={handleBandobastSelect} />}
 				onSearch={handleSearch}
 				searchResults={searchResults}
 				onSearchResultClick={handleSearchResultClick}
@@ -3570,6 +3627,8 @@ export default function Home() {
 					onBoundsChanged={setMapBounds}
 					showLayerControls={false}
 					directions={directions}
+					polygons={bandobastPolygons}
+					paths={bandobastPaths}
 				/>
 
 				{/* Street View popup container (top-right) */}

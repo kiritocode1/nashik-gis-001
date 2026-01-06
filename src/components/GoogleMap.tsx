@@ -71,6 +71,28 @@ interface GoogleMapProps {
 			description: string;
 		}>;
 	}>;
+	// Generic polygons for areas/zones
+	polygons?: Array<{
+		paths: Array<{ lat: number; lng: number }>;
+		fillColor: string;
+		fillOpacity?: number;
+		strokeColor?: string;
+		strokeWeight?: number;
+		visible?: boolean;
+		zIndex?: number;
+		meta?: any;
+	}>;
+	// Generic paths for patrols/movement
+	paths?: Array<{
+		path: Array<{ lat: number; lng: number }>;
+		color: string;
+		weight?: number;
+		opacity?: number;
+		visible?: boolean;
+		glow?: boolean; // Whether to show glow effect
+		zIndex?: number;
+		meta?: any;
+	}>;
 	selectedPoint?: { lat: number; lng: number; zoom?: number };
 	onPointClick?: (point: { lat: number; lng: number; title?: string; group?: string; meta?: Record<string, unknown> }) => void;
 	/** Fired when a procession route (polyline or its endpoints) is clicked */
@@ -134,6 +156,8 @@ export default function GoogleMap({
 	kmlLayer,
 	geoJsonLayer,
 	polylines = [],
+	polygons = [],
+	paths = [],
 	selectedPoint,
 	onPointClick,
 	onRouteClick,
@@ -163,6 +187,8 @@ export default function GoogleMap({
 	const geoJsonAbortControllerRef = useRef<AbortController | null>(null);
 	const geoJsonFeaturesRef = useRef<any[]>([]);
 	const polylinesRef = useRef<any[]>([]);
+	const genericPolygonsRef = useRef<any[]>([]);
+	const genericPathsRef = useRef<any[]>([]);
 	const [kmlVisible, setKmlVisible] = useState(kmlLayer?.visible ?? false);
 	const [geoJsonVisible, setGeoJsonVisible] = useState(geoJsonLayer?.visible ?? false);
 	const [markersVisible, setMarkersVisible] = useState(true);
@@ -629,6 +655,122 @@ export default function GoogleMap({
 			});
 		}
 	}, [polylines, isLoaded, onPointClick]);
+
+	// Handle generic polygons (zones/areas)
+	useEffect(() => {
+		if (mapInstanceRef.current && isLoaded && window.google?.maps) {
+			// Clear existing generic polygons
+			if (genericPolygonsRef.current) {
+				genericPolygonsRef.current.forEach(p => p.setMap(null));
+				genericPolygonsRef.current = [];
+			}
+
+			// Render
+			polygons.forEach((polyData) => {
+				if (polyData.visible !== false) {
+					const polygon = new window.google.maps.Polygon({
+						paths: polyData.paths,
+						strokeColor: polyData.strokeColor || polyData.fillColor,
+						strokeOpacity: 1.0,
+						strokeWeight: polyData.strokeWeight || 2,
+						fillColor: polyData.fillColor,
+						fillOpacity: polyData.fillOpacity || 0.35,
+						zIndex: polyData.zIndex || 500,
+						clickable: false, // For now, not interactive
+					});
+					polygon.setMap(mapInstanceRef.current);
+					genericPolygonsRef.current.push(polygon);
+
+					// If polygon has a name or meta name, add a label at centroid
+					const name = (polyData as any).name || (polyData.meta && polyData.meta.name);
+					if (name) {
+						// Calculate centroid
+						const bounds = new window.google.maps.LatLngBounds();
+						polyData.paths.forEach(p => bounds.extend(new window.google.maps.LatLng(p.lat, p.lng)));
+						const center = bounds.getCenter();
+
+						// Create label marker
+						const labelOverlay = createHtmlMarker(
+							{ lat: center.lat(), lng: center.lng() },
+							{
+								label: name,
+								title: name,
+								color: "transparent", // invisible dot
+								groupName: "Zone Label"
+							}
+						);
+
+						// Override style to be a pure text label
+						// (Using a delay to ensure element exists)
+						setTimeout(() => {
+							const panes = labelOverlay.getPanes ? labelOverlay.getPanes() : null;
+							const el = panes?.overlayMouseTarget?.lastElementChild;
+
+							if (el) {
+								// Hide the standard dot/pulse
+								const dot = el.querySelector('.gis-marker-dot');
+								const pulse = el.querySelector('.gis-marker-pulse');
+								if (dot) dot.style.display = 'none';
+								if (pulse) pulse.style.display = 'none';
+
+								// Add text label
+								const textLabel = document.createElement('div');
+								textLabel.className = 'px-2 py-1 bg-black/60 backdrop-blur-sm border border-white/20 rounded text-xs font-medium text-white shadow-sm whitespace-nowrap transform -translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 pointer-events-none';
+								textLabel.innerText = name;
+								el.appendChild(textLabel);
+							}
+						}, 50); // Increased timeout slightly to ensure availability
+
+						genericPolygonsRef.current.push(labelOverlay);
+					}
+				}
+			});
+		}
+	}, [polygons, isLoaded]);
+
+	// Handle generic paths (patrols/routes)
+	useEffect(() => {
+		if (mapInstanceRef.current && isLoaded && window.google?.maps) {
+			// Clear existing generic paths
+			if (genericPathsRef.current) {
+				genericPathsRef.current.forEach(p => p.setMap(null));
+				genericPathsRef.current = [];
+			}
+
+			// Render
+			paths.forEach((pathData) => {
+				if (pathData.visible !== false) {
+					// Main line
+					const polyline = new window.google.maps.Polyline({
+						path: pathData.path,
+						geodesic: true,
+						strokeColor: pathData.color,
+						strokeOpacity: pathData.opacity || 1.0,
+						strokeWeight: pathData.weight || 4,
+						zIndex: pathData.zIndex || 1000,
+						clickable: false,
+					});
+					polyline.setMap(mapInstanceRef.current);
+					genericPathsRef.current.push(polyline);
+
+					// Glow effect if requested
+					if (pathData.glow) {
+						const glow = new window.google.maps.Polyline({
+							path: pathData.path,
+							geodesic: true,
+							strokeColor: pathData.color,
+							strokeOpacity: 0.3,
+							strokeWeight: (pathData.weight || 4) * 3,
+							zIndex: (pathData.zIndex || 1000) - 1,
+							clickable: false,
+						});
+						glow.setMap(mapInstanceRef.current);
+						genericPathsRef.current.push(glow);
+					}
+				}
+			});
+		}
+	}, [paths, isLoaded]);
 
 	// Handle heatmap
 	useEffect(() => {
