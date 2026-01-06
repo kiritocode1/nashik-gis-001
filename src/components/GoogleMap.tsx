@@ -729,46 +729,45 @@ export default function GoogleMap({
 	}, [polygons, isLoaded]);
 
 	// Helper function to generate human-like patrol paths
-	// Takes simple 2-point paths and creates organic, curved patrol routes
+	// Path starts FROM the officer's position (first point) and loops back
 	const generateHumanPatrolPath = (
 		originalPath: Array<{ lat: number; lng: number }>,
-		_radiusMeters: number = 100 // Max distance from center (default 100m for tighter patrol)
+		_radiusMeters: number = 100 // Max distance from start (default 100m)
 	): Array<{ lat: number; lng: number }> => {
-		if (originalPath.length < 2) return originalPath;
+		if (originalPath.length < 1) return originalPath;
 
-		// Calculate center point of the original path
-		const centerLat = originalPath.reduce((sum, p) => sum + p.lat, 0) / originalPath.length;
-		const centerLng = originalPath.reduce((sum, p) => sum + p.lng, 0) / originalPath.length;
+		// Use the FIRST point as the officer's station (where their marker is)
+		const startPoint = originalPath[0];
 
 		// Convert meters to approximate degrees (1 degree ≈ 111km at equator)
 		// For 100m patrol area, use ~0.0009 degrees
 		const radiusDeg = 0.0009;
 
-		// Generate 5-8 random waypoints around the center for organic movement
-		const numPoints = 5 + Math.floor(Math.random() * 4);
+		// Generate 4-6 waypoints for patrol, starting and ending at officer's position
+		const numWaypoints = 4 + Math.floor(Math.random() * 3);
 		const humanPath: Array<{ lat: number; lng: number }> = [];
 
-		// Create a somewhat circular patrol pattern with randomness
-		for (let i = 0; i < numPoints; i++) {
-			const angle = (i / numPoints) * 2 * Math.PI + (Math.random() - 0.5) * 0.8;
-			// Random radius between 30% and 100% of max
-			const r = radiusDeg * (0.3 + Math.random() * 0.7);
+		// Start at officer's position
+		humanPath.push({ lat: startPoint.lat, lng: startPoint.lng });
 
-			// Add slight jitter for more organic feel
-			const jitterLat = (Math.random() - 0.5) * radiusDeg * 0.3;
-			const jitterLng = (Math.random() - 0.5) * radiusDeg * 0.3;
+		// Create waypoints in a patrol pattern around the starting point
+		for (let i = 0; i < numWaypoints; i++) {
+			// Distribute points somewhat evenly but with randomness
+			const baseAngle = (i / numWaypoints) * 2 * Math.PI;
+			const angleJitter = (Math.random() - 0.5) * 0.8;
+			const angle = baseAngle + angleJitter;
+
+			// Random distance: 40% to 90% of max radius for realistic patrol
+			const r = radiusDeg * (0.4 + Math.random() * 0.5);
 
 			humanPath.push({
-				lat: centerLat + Math.sin(angle) * r + jitterLat,
-				lng: centerLng + Math.cos(angle) * r + jitterLng,
+				lat: startPoint.lat + Math.sin(angle) * r,
+				lng: startPoint.lng + Math.cos(angle) * r,
 			});
 		}
 
-		// Close the loop by returning to near the start
-		humanPath.push({
-			lat: humanPath[0].lat + (Math.random() - 0.5) * radiusDeg * 0.2,
-			lng: humanPath[0].lng + (Math.random() - 0.5) * radiusDeg * 0.2,
-		});
+		// Return to officer's position (close the loop)
+		humanPath.push({ lat: startPoint.lat, lng: startPoint.lng });
 
 		return humanPath;
 	};

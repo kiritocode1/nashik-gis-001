@@ -478,17 +478,24 @@ export default function Home() {
 			setBandobastPolygons([]);
 		}
 
-		// Set patrol paths/lines if available
-		if (event.patrolPaths) {
-			setBandobastPaths(event.patrolPaths.map((path: any) => ({
-				...path,
+		// Generate patrol paths FROM officer positions (not from separate patrolPaths data)
+		// This ensures patrol paths start at the officer's actual location
+		const generatedPaths = event.points.map((point: any, index: number) => {
+			// Use patrolPath color if available, otherwise alternate colors
+			const patrolPath = event.patrolPaths?.[index];
+			const colors = ["#3b82f6", "#22c55e", "#eab308", "#ef4444", "#8b5cf6"];
+			const color = patrolPath?.color || colors[index % colors.length];
+
+			return {
+				path: [{ lat: point.lat, lng: point.lng }], // Start from officer position
+				color: color,
 				visible: true,
 				zIndex: 900,
-				glow: true
-			})));
-		} else {
-			setBandobastPaths([]);
-		}
+				glow: true,
+				weight: patrolPath?.weight || 3
+			};
+		});
+		setBandobastPaths(generatedPaths);
 
 		// If map center update is needed, it can be done here or via selectedPoint
 		if (markers.length > 0) {
