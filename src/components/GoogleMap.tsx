@@ -273,28 +273,24 @@ export default function GoogleMap({
 		return overlay;
 	};
 
-	// Load Google Maps script
+	// Load Google Maps script using centralized loader
 	useEffect(() => {
-		if (window.google && window.google.maps) {
-			setIsLoaded(true);
-			return;
+		// Define initMap on window if it doesn't exist to satisfy any legacy callbacks
+		if (typeof window !== "undefined" && !window.initMap) {
+			window.initMap = () => {
+				setIsLoaded(true);
+			};
 		}
 
-		window.initMap = () => {
-			setIsLoaded(true);
-		};
-
-		const script = document.createElement("script");
-		script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDDs2zpvbxf7cpWK0-5uKpxNtbq91Y7v6A&callback=initMap&libraries=visualization,geometry,places&loading=async";
-		script.async = true;
-		script.defer = true;
-		document.head.appendChild(script);
-
-		return () => {
-			if (script.parentNode) {
-				script.parentNode.removeChild(script);
-			}
-		};
+		import("@/utils/googleMapsLoader").then(({ loadGoogleMaps }) => {
+			loadGoogleMaps()
+				.then(() => {
+					setIsLoaded(true);
+				})
+				.catch((err) => {
+					console.error("Failed to load Google Maps API", err);
+				});
+		});
 	}, []);
 
 	// Initialize map
