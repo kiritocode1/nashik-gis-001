@@ -1,27 +1,26 @@
 import { google } from "@ai-sdk/google";
-import { streamText, convertToModelMessages, tool } from "ai";
+import { streamText, convertToModelMessages, tool, stepCountIs, UIMessage } from "ai";
 import { z } from "zod";
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-    const { messages } = await req.json();
+    const { messages }: { messages: UIMessage[] } = await req.json();
 
     const result = streamText({
         model: google("gemini-2.5-flash-lite"),
         messages: await convertToModelMessages(messages),
-        // @ts-ignore
-        maxSteps: 5,
-        // If maxSteps errors, we rely on the runtime.
+        stopWhen: stepCountIs(5),
         system: `You are a data analyst for Nashik Government. You help users understand city data including crime, emergency services, and infrastructure.
 
 STRICT RULES:
-1. NEVER explain what Dial 112, CCTV, or other systems are or how they work. Users already know.
-2. NEVER use general knowledge, Wikipedia information, or facts not in the data context.
-3. ALWAYS start with specific numbers and statistics when available.
-4. ONLY report: totals, counts, percentages, top categories, patterns, trends from the data.
-5. If data isn't available, check if you can use the 'get_city_data' tool. if still not available, say "Data not available".
-6. Format with Markdown (bold, lists).`,
+1. ALWAYS respond with a text summary after using tools - never end without a response.
+2. NEVER explain what Dial 112, CCTV, or other systems are or how they work. Users already know.
+3. NEVER use general knowledge, Wikipedia information, or facts not in the data context.
+4. ALWAYS start with specific numbers and statistics when available.
+5. ONLY report: totals, counts, percentages, top categories, patterns, trends from the data.
+6. If data isn't available, check if you can use the 'get_city_data' tool. if still not available, say "Data not available".
+7. Format with Markdown (bold, lists).`,
         tools: {
             get_city_data: tool({
                 description: "Get real-time data about Nashik city including crime stats, emergency calls (Dial 112), CCTV locations, police stations, hospitals, and procession routes.",

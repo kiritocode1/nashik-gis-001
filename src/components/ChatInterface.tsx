@@ -1,19 +1,24 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 
 import { Mic, MicOff, Send, Trash2, Loader2 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 
 export default function ChatInterface() {
 
-	const { messages, sendMessage, setMessages, status, error, stop } = useChat();
+	const { messages, sendMessage, setMessages, status, error, stop } = useChat({
+		transport: new DefaultChatTransport({
+			api: "/api/chat",
+		}),
+	});
 
 	const isLoading = status === "streaming" || status === "submitted";
 
 	const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
-	// 1. Define local input state
+	// Local input state (AI SDK v6 requires managing input state manually)
 	const [input, setInput] = useState("");
 
 	// Voice recognition state
