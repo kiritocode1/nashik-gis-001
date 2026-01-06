@@ -728,6 +728,51 @@ export default function GoogleMap({
 		}
 	}, [polygons, isLoaded]);
 
+	// Helper function to generate human-like patrol paths
+	// Takes simple 2-point paths and creates organic, curved patrol routes
+	const generateHumanPatrolPath = (
+		originalPath: Array<{ lat: number; lng: number }>,
+		_radiusMeters: number = 100 // Max distance from center (default 100m for tighter patrol)
+	): Array<{ lat: number; lng: number }> => {
+		if (originalPath.length < 2) return originalPath;
+
+		// Calculate center point of the original path
+		const centerLat = originalPath.reduce((sum, p) => sum + p.lat, 0) / originalPath.length;
+		const centerLng = originalPath.reduce((sum, p) => sum + p.lng, 0) / originalPath.length;
+
+		// Convert meters to approximate degrees (1 degree ≈ 111km at equator)
+		// For 100m patrol area, use ~0.0009 degrees
+		const radiusDeg = 0.0009;
+
+		// Generate 5-8 random waypoints around the center for organic movement
+		const numPoints = 5 + Math.floor(Math.random() * 4);
+		const humanPath: Array<{ lat: number; lng: number }> = [];
+
+		// Create a somewhat circular patrol pattern with randomness
+		for (let i = 0; i < numPoints; i++) {
+			const angle = (i / numPoints) * 2 * Math.PI + (Math.random() - 0.5) * 0.8;
+			// Random radius between 30% and 100% of max
+			const r = radiusDeg * (0.3 + Math.random() * 0.7);
+
+			// Add slight jitter for more organic feel
+			const jitterLat = (Math.random() - 0.5) * radiusDeg * 0.3;
+			const jitterLng = (Math.random() - 0.5) * radiusDeg * 0.3;
+
+			humanPath.push({
+				lat: centerLat + Math.sin(angle) * r + jitterLat,
+				lng: centerLng + Math.cos(angle) * r + jitterLng,
+			});
+		}
+
+		// Close the loop by returning to near the start
+		humanPath.push({
+			lat: humanPath[0].lat + (Math.random() - 0.5) * radiusDeg * 0.2,
+			lng: humanPath[0].lng + (Math.random() - 0.5) * radiusDeg * 0.2,
+		});
+
+		return humanPath;
+	};
+
 	// Handle generic paths (patrols/routes)
 	useEffect(() => {
 		if (mapInstanceRef.current && isLoaded && window.google?.maps) {
@@ -740,13 +785,18 @@ export default function GoogleMap({
 			// Render
 			paths.forEach((pathData) => {
 				if (pathData.visible !== false) {
+					// Apply human-like path generation for patrol paths (detected by 'glow' property)
+					const displayPath = pathData.glow
+						? generateHumanPatrolPath(pathData.path, 100)
+						: pathData.path;
+
 					// Main line
 					const polyline = new window.google.maps.Polyline({
-						path: pathData.path,
+						path: displayPath,
 						geodesic: true,
 						strokeColor: pathData.color,
-						strokeOpacity: pathData.opacity || 1.0,
-						strokeWeight: pathData.weight || 4,
+						strokeOpacity: pathData.opacity || 0.9,
+						strokeWeight: pathData.weight || 3,
 						zIndex: pathData.zIndex || 1000,
 						clickable: false,
 					});
@@ -756,11 +806,11 @@ export default function GoogleMap({
 					// Glow effect if requested
 					if (pathData.glow) {
 						const glow = new window.google.maps.Polyline({
-							path: pathData.path,
+							path: displayPath,
 							geodesic: true,
 							strokeColor: pathData.color,
-							strokeOpacity: 0.3,
-							strokeWeight: (pathData.weight || 4) * 3,
+							strokeOpacity: 0.25,
+							strokeWeight: (pathData.weight || 3) * 2.5,
 							zIndex: (pathData.zIndex || 1000) - 1,
 							clickable: false,
 						});
